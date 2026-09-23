@@ -11,6 +11,7 @@
     "build:api": "npm run build --workspace=@confluence/api",
     "build": "npm run build:schemas && npm run build:api",
     "test": "npm run test --workspaces --if-present",
-    "dev:api": "npm run dev --workspace=@confluence/api"
+    "dev:api": "npm run dev --workspace=@confluence/api",
+    "start": "npm run start --workspace=@confluence/api"
   }
 }
