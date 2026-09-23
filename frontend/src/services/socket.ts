@@ -2,9 +2,16 @@ import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ||
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? window.location.origin
+    : "http://localhost:4000");
+
 export function getSocket(): Socket {
   if (!socket) {
-    socket = io("http://localhost:4000", {
+    socket = io(SOCKET_URL, {
       withCredentials: true,
       autoConnect: true,
       reconnectionAttempts: 10,
