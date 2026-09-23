@@ -82,10 +82,10 @@ export type AddWatchlistItemInput = z.infer<typeof addWatchlistItemSchema>;
 // Analysis Runs
 // ==========================================
 export const analysisRunRequestSchema = z.object({
-  ticker: z.string().trim().toUpperCase().regex(/^[A-Z0-9.\-]{1,10}$/),
-  horizon: z.enum(["1d", "5d", "20d"]),
-  minConfidence: z.number().min(0.5).max(0.95),
-  debateRounds: z.number().int().min(1).max(3),
+  ticker: z.string().trim().toUpperCase().min(1).max(20),
+  horizon: z.enum(["1d", "5d", "20d"]).default("5d"),
+  minConfidence: z.number().min(0.5).max(0.95).default(0.7),
+  debateRounds: z.number().int().min(1).max(3).default(2),
   requireUnanimousConvergence: z.boolean().default(false),
 });
 export type AnalysisRunRequest = z.infer<typeof analysisRunRequestSchema>;

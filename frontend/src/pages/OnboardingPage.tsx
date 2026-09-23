@@ -1,12 +1,63 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, ShieldAlert } from 'lucide-react';
+import { Layers, ShieldAlert, AlertCircle } from 'lucide-react';
+import { onboardingService } from '@/services/onboardingService';
+import { useAuthStore } from '@/store/authStore';
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const checkAuth = useAuthStore((s) => s.checkAuth);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [riskCategory, setRiskCategory] = useState<'conservative' | 'balanced' | 'aggressive'>('balanced');
+  const [allocatableCapital, setAllocatableCapital] = useState('10000');
+  const [maxPositionPct, setMaxPositionPct] = useState('10');
+  const [maxDailyLossPct, setMaxDailyLossPct] = useState('3');
+  const [alpacaPaperKey, setAlpacaPaperKey] = useState('');
+  const [alpacaPaperSecret, setAlpacaPaperSecret] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setError('');
+
+    const capitalNum = parseFloat(allocatableCapital);
+    const maxPosNum = parseFloat(maxPositionPct);
+    const maxLossNum = parseFloat(maxDailyLossPct);
+
+    if (isNaN(capitalNum) || capitalNum <= 0) {
+      setError('Please enter a valid allocatable capital amount.');
+      return;
+    }
+    if (isNaN(maxPosNum) || maxPosNum < 1 || maxPosNum > 25) {
+      setError('Max position size must be between 1% and 25%.');
+      return;
+    }
+    if (isNaN(maxLossNum) || maxLossNum < 1 || maxLossNum > 10) {
+      setError('Max daily loss limit must be between 1% and 10%.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onboardingService.completeOnboarding({
+        riskCategory,
+        allocatableCapital: capitalNum,
+        maxPositionPct: maxPosNum,
+        maxDailyLossPct: maxLossNum,
+        alpacaPaperKey: alpacaPaperKey.trim(),
+        alpacaPaperSecret: alpacaPaperSecret.trim(),
+      });
+
+      // Refresh auth state to ensure risk profile is stored in Zustand
+      await checkAuth();
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to complete profile onboarding. Please check your inputs.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -23,10 +74,21 @@ export function OnboardingPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          {error && (
+            <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Risk Category</label>
-              <select className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+              <select
+                value={riskCategory}
+                onChange={(e) => setRiskCategory(e.target.value as any)}
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+              >
                 <option value="balanced">Balanced (Default)</option>
                 <option value="conservative">Conservative</option>
                 <option value="aggressive">Aggressive</option>
@@ -34,23 +96,65 @@ export function OnboardingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Allocatable Capital ($)</label>
-              <input type="number" min="0" placeholder="10000" className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm" />
+              <input
+                type="number"
+                min="100"
+                value={allocatableCapital}
+                onChange={(e) => setAllocatableCapital(e.target.value)}
+                placeholder="10000"
+                required
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Max Position Size (%)</label>
-              <input type="number" min="1" max="25" placeholder="10" className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm" />
+              <input
+                type="number"
+                min="1"
+                max="25"
+                value={maxPositionPct}
+                onChange={(e) => setMaxPositionPct(e.target.value)}
+                placeholder="10"
+                required
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Max Daily Loss (%)</label>
-              <input type="number" min="1" max="10" placeholder="3" className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm" />
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={maxDailyLossPct}
+                onChange={(e) => setMaxDailyLossPct(e.target.value)}
+                placeholder="3"
+                required
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+              />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-1.5">Alpaca Paper API Key <span className="text-red-500">*</span></label>
-              <input type="password" required placeholder="PK..." className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono" />
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Alpaca Paper API Key <span className="text-muted-foreground text-xs font-normal">(Optional for mock testing)</span>
+              </label>
+              <input
+                type="password"
+                value={alpacaPaperKey}
+                onChange={(e) => setAlpacaPaperKey(e.target.value)}
+                placeholder="PK..."
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono"
+              />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-1.5">Alpaca Paper Secret <span className="text-red-500">*</span></label>
-              <input type="password" required placeholder="Secret..." className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono" />
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Alpaca Paper Secret <span className="text-muted-foreground text-xs font-normal">(Optional for mock testing)</span>
+              </label>
+              <input
+                type="password"
+                value={alpacaPaperSecret}
+                onChange={(e) => setAlpacaPaperSecret(e.target.value)}
+                placeholder="Secret..."
+                className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono"
+              />
             </div>
           </div>
 
@@ -60,8 +164,13 @@ export function OnboardingPage() {
           </div>
 
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-8 rounded-lg text-sm transition-colors shadow-md shadow-indigo-500/20">
-              Complete Setup →
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-2.5 px-8 rounded-lg text-sm transition-colors shadow-md shadow-indigo-500/20 flex items-center gap-2"
+            >
+              {loading && <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {loading ? 'Configuring Profile...' : 'Complete Setup →'}
             </button>
           </div>
         </form>

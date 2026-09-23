@@ -19,7 +19,8 @@
     "lucide-react": "^0.363.0",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.2",
-    "@confluence/shared-schemas": "*",
+    "@confluence/shared-schemas": "file:../server/packages/shared-schemas",
+    "socket.io-client": "^4.8.1",
     "lightweight-charts": "^4.1.3",
     "recharts": "^2.12.3",
     "framer-motion": "^11.0.24"

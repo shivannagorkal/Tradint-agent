@@ -39,6 +39,7 @@ killSwitchRouter.post("/kill-switch/engage", requireAuth, async (req: Request, r
 
     res.json({
       success: true,
+      isEngaged: true,
       message: "EMERGENCY KILL SWITCH ENGAGED. All trade submissions are halted.",
       state,
     });
@@ -77,6 +78,7 @@ killSwitchRouter.post("/kill-switch/disengage", requireAuth, async (req: Request
 
     res.json({
       success: true,
+      isEngaged: false,
       message: "Kill switch disengaged. Normal trading controls restored.",
       state,
     });

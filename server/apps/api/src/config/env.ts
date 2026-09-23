@@ -56,6 +56,12 @@ export const env = {
     process.env.ALPACA_LIVE_BASE_URL || "https://api.alpaca.markets",
   ALLOW_LIVE_TRADING: process.env.ALLOW_LIVE_TRADING === "true",
 
+  // Groww Trading API
+  GROWW_API_KEY: process.env.GROWW_API_KEY || "",
+  GROWW_API_SECRET: process.env.GROWW_API_SECRET || "",
+  GROWW_ACCESS_TOKEN: process.env.GROWW_ACCESS_TOKEN || "",
+  GROWW_TOTP_SECRET: process.env.GROWW_TOTP_SECRET || "",
+
   // Agent Runtime
   AGENT_RUNTIME_URL: process.env.AGENT_RUNTIME_URL || "http://localhost:8000",
   AGENT_RUNTIME_INTERNAL_SECRET:

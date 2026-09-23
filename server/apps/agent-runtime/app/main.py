@@ -12,6 +12,7 @@ from app.quant.factors import QuantFactorEngine
 from app.forecasting.probabilistic import ProbabilisticForecastingEngine
 from app.quant.backtest import OverfittingValidationEngine
 from app.execution.sizing import RLSizingEngine
+from app.market.groww_client import groww_client
 
 app = FastAPI(
     title="Confluence Agent Runtime",
@@ -82,5 +83,27 @@ async def calculate_size(req: PositionSizingRequest):
     try:
         result = RLSizingEngine.calculate_sizing(req)
         return result
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+@app.get("/internal/market/quote/{ticker}", dependencies=[Depends(verify_internal_secret)])
+async def get_market_quote(ticker: str):
+    """
+    Fetches real-time market quote using Groww Trading API (growwapi).
+    """
+    try:
+        quote = groww_client.get_quote(ticker)
+        return quote
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+@app.get("/internal/market/indices", dependencies=[Depends(verify_internal_secret)])
+async def get_market_indices():
+    """
+    Fetches live benchmark index quotes for NIFTY 50 and SENSEX via Groww API.
+    """
+    try:
+        indices = groww_client.get_benchmark_indices()
+        return indices
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

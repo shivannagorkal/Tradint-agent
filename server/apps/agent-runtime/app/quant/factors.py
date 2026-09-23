@@ -1,9 +1,13 @@
 import datetime
 import numpy as np
 import pandas as pd
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import settings
+from app.market.groww_client import groww_client
 
 class QuantFactorEngine:
     """
@@ -14,17 +18,35 @@ class QuantFactorEngine:
     @classmethod
     async def fetch_ohlcv(cls, ticker: str, days: int = 180) -> pd.DataFrame:
         """
-        Fetches daily historical price bars using Yahoo Finance, with resilient fallback.
+        Fetches daily historical price bars using Groww API for Indian equities/indices,
+        Yahoo Finance for global assets, with resilient fallback.
         """
-        try:
-            df = yf.download(ticker, period="6mo", interval="1d", progress=False)
-            if not df.empty and len(df) >= 20:
-                # Flatten multi-index columns if present
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = [col[0] for col in df.columns]
-                return df
-        except Exception:
-            pass
+        clean_upper = ticker.strip().upper()
+        is_indian = (
+            clean_upper.endswith(".NS")
+            or clean_upper.endswith(".BO")
+            or clean_upper in groww_client.INDEX_SYMBOLS
+            or clean_upper in ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC"]
+        )
+
+        if is_indian:
+            try:
+                groww_df = groww_client.get_candles(clean_upper, days=days)
+                if groww_df is not None and not groww_df.empty and len(groww_df) >= 10:
+                    return groww_df
+            except Exception as e:
+                print(f"[QuantFactorEngine] Groww candle fetch note for {ticker}: {e}")
+
+        if yf is not None:
+            try:
+                df = yf.download(ticker, period="6mo", interval="1d", progress=False)
+                if not df.empty and len(df) >= 20:
+                    # Flatten multi-index columns if present
+                    if isinstance(df.columns, pd.MultiIndex):
+                        df.columns = [col[0] for col in df.columns]
+                    return df
+            except Exception:
+                pass
 
         # Resilient synthetic price generator for testing / offline environments
         np.random.seed(abs(hash(ticker)) % 10000)

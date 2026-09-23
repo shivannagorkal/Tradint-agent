@@ -1,6 +1,7 @@
-import { ShieldAlert, Bell, Menu, LogOut } from 'lucide-react';
+import { ShieldAlert, Bell, Menu, LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { useKillSwitchStore } from '@/store/killSwitchStore';
 import { useNavigate } from 'react-router-dom';
 
 interface TopBarProps {
@@ -8,14 +9,22 @@ interface TopBarProps {
 }
 
 export function TopBar({ onMenuClick }: TopBarProps) {
-  const [killSwitchEngaged, setKillSwitchEngaged] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout } = useAuthStore();
+  const { isEngaged, toggle, isLoading: isKillSwitchLoading } = useKillSwitchStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
+  };
+
+  const handleKillSwitchToggle = async () => {
+    try {
+      await toggle();
+    } catch (err: any) {
+      alert(`Kill Switch Error: ${err?.message || 'Operation failed'}`);
+    }
   };
 
   return (
@@ -29,28 +38,34 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         </button>
         <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 border border-border px-3 py-1.5 rounded-full">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Market Open
+          Market Open • Confluence Engine Active
         </div>
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Kill Switch */}
+        {/* Global Kill Switch */}
         <button
-          onClick={() => setKillSwitchEngaged(!killSwitchEngaged)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs transition-all border ${
-            killSwitchEngaged
-              ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 shadow-sm'
-              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-border'
+          onClick={handleKillSwitchToggle}
+          disabled={isKillSwitchLoading}
+          title={isEngaged ? "Trading is HALTED globally. Click to disengage." : "Emergency Kill Switch. Click to halt all orders."}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all border shadow-sm ${
+            isEngaged
+              ? 'bg-red-600 hover:bg-red-700 text-white border-red-700 animate-pulse shadow-red-500/30'
+              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-border hover:border-slate-300'
           }`}
         >
-          <ShieldAlert className={`h-4 w-4 ${killSwitchEngaged ? 'text-red-500' : 'text-slate-400'}`} />
-          <span className="hidden sm:inline">{killSwitchEngaged ? 'HALTED' : 'Kill Switch'}</span>
+          {isKillSwitchLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-current" />
+          ) : (
+            <ShieldAlert className={`h-4 w-4 ${isEngaged ? 'text-white' : 'text-slate-500'}`} />
+          )}
+          <span className="hidden sm:inline">{isEngaged ? 'HALTED (CLICK TO RESUME)' : 'Kill Switch'}</span>
         </button>
 
         {/* Notifications */}
         <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-slate-100 rounded-lg transition-colors">
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white" />
         </button>
 
         {/* Divider */}
@@ -67,7 +82,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             </div>
             <div className="hidden md:block text-left">
               <p className="text-xs font-semibold text-foreground capitalize">{user?.name || 'Trader'}</p>
-              <p className="text-xs text-muted-foreground">Paper Mode</p>
+              <p className="text-xs text-muted-foreground">Paper Trading Mode</p>
             </div>
           </button>
 
@@ -85,7 +100,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out
