@@ -15,56 +15,96 @@ import { logAuditEvent } from "../services/auditLogger";
 
 export const onboardingRouter = Router();
 
-// Full onboarding flow (User registration + Risk profile + Alpaca Paper credentials)
+// Full onboarding flow (User registration + Risk profile + Alpaca Paper credentials, or authenticated onboarding)
 onboardingRouter.post(
   "/onboarding",
-  validateBody(onboardingSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const data = req.body;
 
-      const existing = await User.findOne({ email: data.email.toLowerCase() });
-      if (existing) {
-        res.status(409).json({ error: "User already exists with this email address." });
-        return;
+      // Check if user is already authenticated via session cookie or Authorization header
+      let currentUser: any = null;
+      const authToken =
+        req.cookies?.[env.SESSION_COOKIE_NAME] ||
+        req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, env.JWT_SECRET) as any;
+          currentUser = await User.findById(decoded.id);
+        } catch {
+          // Token invalid, proceed with registration flow
+        }
       }
 
-      const passwordHash = await bcrypt.hash(data.password, 10);
-      const user = await User.create({
-        email: data.email.toLowerCase(),
-        passwordHash,
-        displayName: data.displayName,
-        role: "user",
-      });
+      let user = currentUser;
 
-      // Create Risk Profile
-      const riskProfile = await RiskProfile.create({
-        userId: user._id,
-        riskCategory: data.riskCategory,
-        allocatableCapital: data.allocatableCapital,
-        maxPositionPct: data.maxPositionPct,
-        maxDailyLossPct: data.maxDailyLossPct,
-        liveTradingEnabled: false,
-      });
+      if (!user) {
+        // Unauthenticated flow: require email, password, displayName
+        if (!data.email || !data.password || !data.displayName) {
+          res.status(400).json({ error: "Missing required registration fields: email, password, displayName." });
+          return;
+        }
 
-      // Encrypt & Store Alpaca Paper Credentials
-      const encryptedKey = encryptCredential(data.alpacaPaperKey);
-      const encryptedSecret = encryptCredential(data.alpacaPaperSecret);
+        const existing = await User.findOne({ email: data.email.toLowerCase() });
+        if (existing) {
+          // Check if password matches to allow onboarding for existing user
+          const isMatch = await bcrypt.compare(data.password, existing.passwordHash);
+          if (!isMatch) {
+            res.status(409).json({ error: "User already exists with this email address." });
+            return;
+          }
+          user = existing;
+        } else {
+          const passwordHash = await bcrypt.hash(data.password, 10);
+          user = await User.create({
+            email: data.email.toLowerCase(),
+            passwordHash,
+            displayName: data.displayName,
+            role: "user",
+          });
+        }
+      }
 
-      await ApiCredential.create({
-        userId: user._id,
-        provider: "alpaca_paper",
-        encryptedKey: encryptedKey.ciphertext,
-        encryptedSecret: encryptedSecret.ciphertext,
-        keyIv: encryptedKey.iv,
-        keyAuthTag: encryptedKey.authTag,
-      });
+      // Create or Update Risk Profile
+      const riskProfile = await RiskProfile.findOneAndUpdate(
+        { userId: user._id },
+        {
+          userId: user._id,
+          riskCategory: data.riskCategory || "balanced",
+          allocatableCapital: data.allocatableCapital || 10000,
+          maxPositionPct: data.maxPositionPct || 10,
+          maxDailyLossPct: data.maxDailyLossPct || 3,
+          liveTradingEnabled: false,
+        },
+        { upsert: true, new: true }
+      );
 
-      // Initialize Kill Switch State
-      await KillSwitchState.create({
-        userId: user._id,
-        isEngaged: false,
-      });
+      // Encrypt & Store Alpaca Paper Credentials (if provided)
+      if (data.alpacaPaperKey && data.alpacaPaperSecret) {
+        const encryptedKey = encryptCredential(data.alpacaPaperKey);
+        const encryptedSecret = encryptCredential(data.alpacaPaperSecret);
+
+        await ApiCredential.findOneAndUpdate(
+          { userId: user._id, provider: "alpaca_paper" },
+          {
+            userId: user._id,
+            provider: "alpaca_paper",
+            encryptedKey: encryptedKey.ciphertext,
+            encryptedSecret: encryptedSecret.ciphertext,
+            keyIv: encryptedKey.iv,
+            keyAuthTag: encryptedKey.authTag,
+          },
+          { upsert: true }
+        );
+      }
+
+      // Initialize Kill Switch State if not existing
+      await KillSwitchState.findOneAndUpdate(
+        { userId: user._id },
+        { $setOnInsert: { userId: user._id, isEngaged: false } },
+        { upsert: true }
+      );
 
       const token = jwt.sign(
         { id: user._id.toString(), email: user.email, role: user.role, displayName: user.displayName },

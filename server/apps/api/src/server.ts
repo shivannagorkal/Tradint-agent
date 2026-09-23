@@ -20,6 +20,7 @@ import { ordersRouter } from "./routes/orders";
 import { killSwitchRouter } from "./routes/killSwitch";
 import { auditLogRouter } from "./routes/auditLog";
 import { adminRouter } from "./routes/admin";
+import { marketRouter } from "./routes/market";
 
 export const app = express();
 const httpServer = http.createServer(app);
@@ -35,15 +36,17 @@ app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get("/health", (req: Request, res: Response) => {
+// Health check endpoints
+const healthCheckHandler = (req: Request, res: Response) => {
   res.json({
     status: "ok",
     service: "tradevault-api",
     timestamp: new Date().toISOString(),
     database: "mongodb",
   });
-});
+};
+app.get("/health", healthCheckHandler);
+app.get("/api/health", healthCheckHandler);
 
 // API Routes
 app.use("/api/auth", authRouter);
@@ -59,6 +62,7 @@ app.use("/api", ordersRouter);
 app.use("/api", killSwitchRouter);
 app.use("/api", auditLogRouter);
 app.use("/api", adminRouter);
+app.use("/api", marketRouter);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

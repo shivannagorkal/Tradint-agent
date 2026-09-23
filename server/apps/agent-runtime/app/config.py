@@ -17,12 +17,18 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     AGENT_ROUTER_API_KEY: str = os.getenv("AGENT_ROUTER_API_KEY", "")
 
+    # Groww Trading API
+    GROWW_API_KEY: str = os.getenv("GROWW_API_KEY", "")
+    GROWW_API_SECRET: str = os.getenv("GROWW_API_SECRET", "")
+    GROWW_ACCESS_TOKEN: str = os.getenv("GROWW_ACCESS_TOKEN", "")
+    GROWW_TOTP_SECRET: str = os.getenv("GROWW_TOTP_SECRET", "")
+
     # Role Model Assignments (Active Provider Catalogs)
-    GROQ_REASONING_MODEL: str = "qwen/qwen3.8-27b"
-    GEMINI_MODEL: str = "gemini-2.5-flash"
-    MISTRAL_MODEL: str = "mistral-small-latest"
-    NVIDIA_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
-    OPENROUTER_MODEL: str = "deepseek/deepseek-r1"
+    GROQ_REASONING_MODEL: str = "llama-3.3-70b-versatile"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    MISTRAL_MODEL: str = "mistral-large-latest"
+    NVIDIA_MODEL: str = "meta/llama-3.3-70b-instruct"
+    OPENROUTER_MODEL: str = "deepseek/deepseek-chat"
 
     # Agent Router Models
     AGENT_ROUTER_TRADER_MODEL: str = "deepseek-v4-flash"
@@ -34,3 +40,25 @@ class Settings(BaseSettings):
         extra = "allow"
 
 settings = Settings()
+
+# Master Role Assignment Mapping
+AGENT_MODEL_MAPPING = {
+    # Analysts
+    "fundamentals_analyst": {"provider": "gemini", "model": settings.GEMINI_MODEL},
+    "sentiment_analyst":    {"provider": "gemini", "model": settings.GEMINI_MODEL},
+    "technical_analyst":    {"provider": "groq",   "model": settings.GROQ_REASONING_MODEL},
+    "macro_analyst":        {"provider": "nvidia", "model": settings.NVIDIA_MODEL},
+    "news_analyst":         {"provider": "mistral","model": settings.MISTRAL_MODEL},
+
+    # Researchers Debate
+    "bull_researcher":      {"provider": "groq",   "model": settings.GROQ_REASONING_MODEL},
+    "bear_researcher":      {"provider": "groq",   "model": settings.GROQ_REASONING_MODEL},
+
+    # Decision Core (Agent Router)
+    "trader":               {"provider": "agent_router", "model": settings.AGENT_ROUTER_TRADER_MODEL},
+    "risk_manager":         {"provider": "agent_router", "model": settings.AGENT_ROUTER_RISK_MANAGER_MODEL},
+    "portfolio_manager":    {"provider": "agent_router", "model": settings.AGENT_ROUTER_PORTFOLIO_MANAGER_MODEL},
+
+    # Universal Fallback
+    "fallback_provider":    "openrouter",
+}

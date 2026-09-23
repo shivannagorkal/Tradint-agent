@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './components/layout/AppShell';
@@ -14,10 +15,28 @@ import { TermsPage } from './pages/TermsPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { RequireAuth, RedirectIfAuth } from './components/auth/RouteGuards';
+import { useAuthStore } from './store/authStore';
+import { useKillSwitchStore } from './store/killSwitchStore';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30000,
+    },
+  },
+});
 
 function App() {
+  const checkAuth = useAuthStore((s) => s.checkAuth);
+  const initKillSwitch = useKillSwitchStore((s) => s.init);
+
+  useEffect(() => {
+    checkAuth();
+    initKillSwitch();
+  }, [checkAuth, initKillSwitch]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

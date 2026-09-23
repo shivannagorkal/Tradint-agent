@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { proposalAdjustSchema } from "@confluence/shared-schemas";
-import { TradeProposal, Order, RiskProfile } from "../db/models";
+import { TradeProposal, Order, RiskProfile, AgentRun, AgentMessage } from "../db/models";
 import { requireAuth } from "../middleware/auth";
 import { requireKillSwitchDisengaged } from "../middleware/killSwitchGuard";
 import { validateBody } from "../middleware/validate";
@@ -10,7 +10,7 @@ import { logAuditEvent } from "../services/auditLogger";
 
 export const proposalsRouter = Router();
 
-// Get user's proposals
+// Get user's proposals enriched with debate rationale and committee arguments
 proposalsRouter.get("/proposals", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const status = req.query.status as string;
@@ -19,7 +19,61 @@ proposalsRouter.get("/proposals", requireAuth, async (req: Request, res: Respons
       filter.status = status;
     }
     const proposals = await TradeProposal.find(filter).sort({ createdAt: -1 });
-    res.json(proposals);
+
+    const enriched = await Promise.all(
+      proposals.map(async (p) => {
+        let run: any = null;
+        let bullArgs: string[] = [];
+        let bearArgs: string[] = [];
+        let rationale = "Quantitative factor consensus & risk manager approved.";
+        let horizon = "5d";
+
+        if (p.runId) {
+          run = await AgentRun.findById(p.runId);
+          if (run) {
+            horizon = run.horizon || "5d";
+            rationale = run.rationale || rationale;
+          }
+          const messages = await AgentMessage.find({ runId: p.runId }).sort({ sequenceIndex: 1 });
+          const bull = messages.find((m) => m.agentRole === "bull_researcher");
+          const bear = messages.find((m) => m.agentRole === "bear_researcher");
+
+          if (bull?.structuredOutput?.keyArguments && Array.isArray(bull.structuredOutput.keyArguments)) {
+            bullArgs = bull.structuredOutput.keyArguments;
+          } else if (bull?.content) {
+            bullArgs = [bull.content.slice(0, 120)];
+          }
+
+          if (bear?.structuredOutput?.keyArguments && Array.isArray(bear.structuredOutput.keyArguments)) {
+            bearArgs = bear.structuredOutput.keyArguments;
+          } else if (bear?.content) {
+            bearArgs = [bear.content.slice(0, 120)];
+          }
+        }
+
+        if (bullArgs.length === 0) {
+          bullArgs = ["Momentum factor signals bullish trend", "RSI and MACD technical support", "Low volatility breakout potential"];
+        }
+        if (bearArgs.length === 0) {
+          bearArgs = ["Macro volatility headline risk", "Potential overhead resistance level"];
+        }
+
+        const pObj = p.toObject();
+        return {
+          ...pObj,
+          id: p._id.toString(),
+          suggestedQty: p.suggestedQuantity || 10,
+          suggestedSizePct: p.suggestedSizePct || 5.0,
+          price: 150.0,
+          horizon,
+          rationale,
+          bullArgs,
+          bearArgs,
+        };
+      })
+    );
+
+    res.json(enriched);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

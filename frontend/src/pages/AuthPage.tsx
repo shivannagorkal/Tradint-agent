@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Eye, EyeOff, TrendingUp, ShieldCheck, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import logoImg from '@/assets/logo.png';
+import { authService } from '@/services/authService';
 
 const FEATURES = [
   { icon: Brain, title: 'Multi-Agent Debate', desc: 'Bull and Bear researchers challenge each other before any trade.' },
@@ -12,7 +13,7 @@ const FEATURES = [
 
 export function AuthPage({ type }: { type: 'login' | 'register' }) {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -39,12 +40,21 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
     }
 
     setLoading(true);
-    // Simulate async auth (replace with real API call)
-    setTimeout(() => {
+    try {
+      if (type === 'register') {
+        const res = await authService.register(name.trim(), email.trim().toLowerCase(), password);
+        setUser(res.user);
+        navigate('/onboarding');
+      } else {
+        const res = await authService.login(email.trim().toLowerCase(), password);
+        setUser(res.user);
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed. Please check your credentials.');
+    } finally {
       setLoading(false);
-      login(name || email.split('@')[0], email);
-      navigate('/dashboard');
-    }, 800);
+    }
   };
 
   return (

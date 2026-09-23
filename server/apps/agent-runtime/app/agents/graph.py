@@ -2,7 +2,7 @@ import datetime
 from typing import Dict, Any, List
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
-from app.config import settings
+from app.config import settings, AGENT_MODEL_MAPPING
 from app.schemas.agent_schemas import (
     AnalystOutput,
     ResearcherOutput,
@@ -57,18 +57,23 @@ class MultiAgentDebateGraph:
             transcript_messages.append(msg)
 
         # ----------------------------------------------------
+        # ----------------------------------------------------
         # Phase 1: Analyst Team
         # ----------------------------------------------------
-        analyst_specs = [
-            ("fundamentals_analyst", "gemini", settings.GEMINI_MODEL),
-            ("sentiment_analyst", "gemini", settings.GEMINI_MODEL),
-            ("technical_analyst", "groq", settings.GROQ_REASONING_MODEL),
-            ("macro_analyst", "nvidia", settings.NVIDIA_MODEL),
-            ("news_analyst", "mistral", settings.MISTRAL_MODEL),
+        analyst_roles = [
+            "fundamentals_analyst",
+            "sentiment_analyst",
+            "technical_analyst",
+            "macro_analyst",
+            "news_analyst",
         ]
 
         analyst_outputs: Dict[str, Any] = {}
-        for role, provider, model in analyst_specs:
+        for role in analyst_roles:
+            spec = AGENT_MODEL_MAPPING[role]
+            provider = spec["provider"]
+            model = spec["model"]
+
             user_prompt = (
                 f"Ticker: {req.ticker}\n"
                 f"Factor Scores: {factor_doc}\n"
@@ -93,8 +98,11 @@ class MultiAgentDebateGraph:
         last_bull_arg = ""
         last_bear_arg = ""
 
+        bull_spec = AGENT_MODEL_MAPPING["bull_researcher"]
+        bear_spec = AGENT_MODEL_MAPPING["bear_researcher"]
+
         for r in range(1, rounds + 1):
-            # Bull Researcher turn (Groq reasoning model)
+            # Bull Researcher turn (Groq Llama 3.3 70B)
             bull_prompt = (
                 f"Ticker: {req.ticker} (Round {r}/{rounds})\n"
                 f"Analyst Findings: {analyst_outputs}\n"
@@ -102,8 +110,8 @@ class MultiAgentDebateGraph:
                 "Construct strongest long argument and counter opponent."
             )
             bull_prov, bull_res = await router.call_structured(
-                provider="groq",
-                model=settings.GROQ_REASONING_MODEL,
+                provider=bull_spec["provider"],
+                model=bull_spec["model"],
                 system_prompt=ROLE_PROMPTS["bull_researcher"],
                 user_prompt=bull_prompt,
                 response_model=ResearcherOutput,
@@ -112,7 +120,7 @@ class MultiAgentDebateGraph:
             last_bull_arg = bull_res.argument
             await record_message("bull_researcher", bull_prov, bull_res.argument, bull_res)
 
-            # Bear Researcher turn (Groq reasoning model)
+            # Bear Researcher turn (Groq Llama 3.3 70B)
             bear_prompt = (
                 f"Ticker: {req.ticker} (Round {r}/{rounds})\n"
                 f"Analyst Findings: {analyst_outputs}\n"
@@ -120,8 +128,8 @@ class MultiAgentDebateGraph:
                 "Construct strongest counter argument and attack bullish premise."
             )
             bear_prov, bear_res = await router.call_structured(
-                provider="groq",
-                model=settings.GROQ_REASONING_MODEL,
+                provider=bear_spec["provider"],
+                model=bear_spec["model"],
                 system_prompt=ROLE_PROMPTS["bear_researcher"],
                 user_prompt=bear_prompt,
                 response_model=ResearcherOutput,
@@ -133,6 +141,7 @@ class MultiAgentDebateGraph:
         # ----------------------------------------------------
         # Phase 3: Trader Synthesis (Agent Router: DeepSeek V4 Flash)
         # ----------------------------------------------------
+        trader_spec = AGENT_MODEL_MAPPING["trader"]
         trader_prompt = (
             f"Ticker: {req.ticker}\n"
             f"Bull Case: {last_bull_arg}\n"
@@ -141,8 +150,8 @@ class MultiAgentDebateGraph:
             "Synthesize concrete buy/sell/hold proposal with suggested position size %."
         )
         trader_prov, trader_res = await router.call_structured(
-            provider="agent_router",
-            model=settings.AGENT_ROUTER_TRADER_MODEL,
+            provider=trader_spec["provider"],
+            model=trader_spec["model"],
             system_prompt=ROLE_PROMPTS["trader"],
             user_prompt=trader_prompt,
             response_model=TraderOutput,
@@ -153,13 +162,14 @@ class MultiAgentDebateGraph:
         # ----------------------------------------------------
         # Phase 4: Risk Manager Review (Agent Router: Claude Opus 4.8)
         # ----------------------------------------------------
+        risk_spec = AGENT_MODEL_MAPPING["risk_manager"]
         risk_prompt = (
             f"Trader Proposal: {trader_res.model_dump()}\n"
             "Verify max position size, max daily loss limits, and backtest status. Exercise veto if needed."
         )
         risk_prov, risk_res = await router.call_structured(
-            provider="agent_router",
-            model=settings.AGENT_ROUTER_RISK_MANAGER_MODEL,
+            provider=risk_spec["provider"],
+            model=risk_spec["model"],
             system_prompt=ROLE_PROMPTS["risk_manager"],
             user_prompt=risk_prompt,
             response_model=RiskManagerOutput,
@@ -185,6 +195,7 @@ class MultiAgentDebateGraph:
         # ----------------------------------------------------
         # Phase 5: Portfolio Manager Sign-Off (Agent Router: GPT 6 Astra)
         # ----------------------------------------------------
+        pm_spec = AGENT_MODEL_MAPPING["portfolio_manager"]
         pm_prompt = (
             f"Surviving Action: {action_allowed}\n"
             f"Risk Review: {risk_res.model_dump()}\n"
@@ -192,8 +203,8 @@ class MultiAgentDebateGraph:
             "Issue final decision, calibrated confidence score, and clear rationale."
         )
         pm_prov, pm_res = await router.call_structured(
-            provider="agent_router",
-            model=settings.AGENT_ROUTER_PORTFOLIO_MANAGER_MODEL,
+            provider=pm_spec["provider"],
+            model=pm_spec["model"],
             system_prompt=ROLE_PROMPTS["portfolio_manager"],
             user_prompt=pm_prompt,
             response_model=PortfolioManagerOutput,

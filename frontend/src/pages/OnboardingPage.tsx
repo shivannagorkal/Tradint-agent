@@ -1,17 +1,64 @@
-import { useNavigate } from 'react-router-dom';
-import { Layers, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
+import { onboardingService } from '@/services/onboardingService';
+import { useAuthStore } from '@/store/authStore';
 import logoImg from '@/assets/logo.png';
 
 export function OnboardingPage() {
   const navigate = useNavigate();
-  const [riskCategory, setRiskCategory] = useState('balanced');
-  const [paperBalance, setPaperBalance] = useState('100000');
-  const [maxPosition, setMaxPosition] = useState('10');
+  const checkAuth = useAuthStore((s) => s.checkAuth);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate('/dashboard');
+  const [riskCategory, setRiskCategory] = useState<'conservative' | 'balanced' | 'aggressive'>('balanced');
+  const [allocatableCapital, setAllocatableCapital] = useState('10000');
+  const [maxPositionPct, setMaxPositionPct] = useState('10');
+  const [maxDailyLossPct, setMaxDailyLossPct] = useState('3');
+  const [alpacaPaperKey, setAlpacaPaperKey] = useState('');
+  const [alpacaPaperSecret, setAlpacaPaperSecret] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError('');
+
+    const capitalNum = parseFloat(allocatableCapital);
+    const maxPosNum = parseFloat(maxPositionPct);
+    const maxLossNum = parseFloat(maxDailyLossPct);
+
+    if (isNaN(capitalNum) || capitalNum <= 0) {
+      setError('Please enter a valid allocatable capital amount.');
+      return;
+    }
+    if (isNaN(maxPosNum) || maxPosNum < 1 || maxPosNum > 25) {
+      setError('Max position size must be between 1% and 25%.');
+      return;
+    }
+    if (isNaN(maxLossNum) || maxLossNum < 1 || maxLossNum > 10) {
+      setError('Max daily loss limit must be between 1% and 10%.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onboardingService.completeOnboarding({
+        riskCategory,
+        allocatableCapital: capitalNum,
+        maxPositionPct: maxPosNum,
+        maxDailyLossPct: maxLossNum,
+        alpacaPaperKey: alpacaPaperKey.trim(),
+        alpacaPaperSecret: alpacaPaperSecret.trim(),
+      });
+
+      // Refresh auth state to ensure risk profile is stored in Zustand
+      await checkAuth();
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to complete profile onboarding. Please check your inputs.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,13 +90,20 @@ export function OnboardingPage() {
             </div>
           </div>
 
+          {error && (
+            <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Preferences */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">Risk Profile</label>
               <select
                 value={riskCategory}
-                onChange={(e) => setRiskCategory(e.target.value)}
+                onChange={(e) => setRiskCategory(e.target.value as any)}
                 className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
               >
                 <option value="balanced">Balanced (Recommended)</option>
@@ -59,13 +113,14 @@ export function OnboardingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">Simulated Starting Capital ($)</label>
+              <label className="block text-sm font-semibold text-foreground mb-1.5">Allocatable Capital ($)</label>
               <input
                 type="number"
-                value={paperBalance}
-                onChange={(e) => setPaperBalance(e.target.value)}
-                min="1000"
-                step="1000"
+                min="100"
+                value={allocatableCapital}
+                onChange={(e) => setAllocatableCapital(e.target.value)}
+                placeholder="10000"
+                required
                 className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
               />
             </div>
@@ -74,21 +129,54 @@ export function OnboardingPage() {
               <label className="block text-sm font-semibold text-foreground mb-1.5">Max Position Size (%)</label>
               <input
                 type="number"
-                value={maxPosition}
-                onChange={(e) => setMaxPosition(e.target.value)}
                 min="1"
                 max="25"
+                value={maxPositionPct}
+                onChange={(e) => setMaxPositionPct(e.target.value)}
+                placeholder="10"
+                required
                 className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">AI Committee Consensus Level</label>
-              <select className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
-                <option value="70">70% Consensus Required</option>
-                <option value="80">80% High Conviction</option>
-                <option value="60">60% Moderate Conviction</option>
-              </select>
+              <label className="block text-sm font-semibold text-foreground mb-1.5">Max Daily Loss (%)</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={maxDailyLossPct}
+                onChange={(e) => setMaxDailyLossPct(e.target.value)}
+                placeholder="3"
+                required
+                className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Alpaca Paper API Key <span className="text-muted-foreground text-xs font-normal">(Optional for mock testing)</span>
+              </label>
+              <input
+                type="password"
+                value={alpacaPaperKey}
+                onChange={(e) => setAlpacaPaperKey(e.target.value)}
+                placeholder="PK..."
+                className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Alpaca Paper Secret <span className="text-muted-foreground text-xs font-normal">(Optional for mock testing)</span>
+              </label>
+              <input
+                type="password"
+                value={alpacaPaperSecret}
+                onChange={(e) => setAlpacaPaperSecret(e.target.value)}
+                placeholder="Secret..."
+                className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-mono"
+              />
             </div>
           </div>
 
@@ -112,10 +200,12 @@ export function OnboardingPage() {
 
             <button
               type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-7 rounded-xl text-sm transition-all shadow-md shadow-indigo-500/25 flex items-center gap-2"
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-2.5 px-8 rounded-xl text-sm transition-all shadow-md shadow-indigo-500/25 flex items-center gap-2"
             >
-              <span>Enter TradeVault Terminal</span>
-              <ArrowRight className="h-4 w-4" />
+              {loading && <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              <span>{loading ? 'Configuring Profile...' : 'Complete Setup →'}</span>
+              {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
           </div>
         </form>
