@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Layers, ArrowLeft, FileText, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
+import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 
 export function TermsPage() {

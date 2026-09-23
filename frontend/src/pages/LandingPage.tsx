@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { InteractiveDotGrid } from '../components/common/InteractiveDotGrid';
 import logoImg from '@/assets/logo.png';
 import {
-  Layers,
   ArrowRight,
   ShieldCheck,
   Brain,

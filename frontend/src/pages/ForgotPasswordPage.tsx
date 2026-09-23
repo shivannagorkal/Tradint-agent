@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, ArrowLeft, Mail, CheckCircle2, Lock, KeyRound, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Mail, CheckCircle2, Lock, KeyRound, ArrowRight } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 
 export function ForgotPasswordPage() {

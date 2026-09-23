@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Layers, ArrowLeft, Shield, Lock, Eye, Database, Globe, UserCheck } from 'lucide-react';
+import { ArrowLeft, Shield, Lock } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 
 export function PrivacyPolicyPage() {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, Eye, EyeOff, TrendingUp, ShieldCheck, Brain } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, ShieldCheck, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import logoImg from '@/assets/logo.png';
 import { authService } from '@/services/authService';

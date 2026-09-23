@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, LineChart, List, History, FileSearch, Settings, X, Layers, Network
+  LayoutDashboard, LineChart, List, History, FileSearch, Settings, X, Network
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
