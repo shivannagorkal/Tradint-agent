@@ -1,4 +1,4 @@
-# TradeX — Hybrid Multi-Agent Quantitative Trading Platform
+# TradeVault — Hybrid Multi-Agent Quantitative Trading Platform
 
 > **Production-grade, end-to-end multi-agent quantitative trading advisory, statistical forecasting, and automated execution platform.**
 
@@ -42,7 +42,7 @@
 
 ## System Architecture
 
-TradeX unifies multi-model generative AI debate workflows with quantitative statistical rigor, algorithmic risk checks, and real-time order routing.
+TradeVault unifies multi-model generative AI debate workflows with quantitative statistical rigor, algorithmic risk checks, and real-time order routing.
 
 ### High-Level Flow Diagram
 
@@ -246,7 +246,7 @@ sequenceDiagram
 
 ## Backend API Gateway (`server/apps/api/`)
 
-The API Gateway is the central nervous system of TradeX, built with **Node.js**, **Express**, and **TypeScript**.
+The API Gateway is the central nervous system of TradeVault, built with **Node.js**, **Express**, and **TypeScript**.
 
 ### Core Responsibilities
 
@@ -326,7 +326,7 @@ A dedicated **Python 3.11 + FastAPI** microservice optimized for high-performanc
 
 ## Specialized Multi-Model LLM Routing
 
-TradeX avoids generic single-model bottlenecks. Instead, it routes each sub-task to the specific LLM architecture optimized for that domain.
+TradeVault avoids generic single-model bottlenecks. Instead, it routes each sub-task to the specific LLM architecture optimized for that domain.
 
 ### Agent Role & Model Matrix
 
@@ -501,7 +501,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** to access the TradeX platform.
+Open **http://localhost:5173** to access the TradeVault platform.
 
 ---
 

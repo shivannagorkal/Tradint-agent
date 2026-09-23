@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Eye, EyeOff, TrendingUp, ShieldCheck, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import logoImg from '@/assets/logo.png';
 
 const FEATURES = [
   { icon: Brain, title: 'Multi-Agent Debate', desc: 'Bull and Bear researchers challenge each other before any trade.' },
@@ -55,8 +56,8 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
         <div className="absolute bottom-[-100px] left-[-60px] w-80 h-80 rounded-full bg-white/5 pointer-events-none" />
 
         <div className="flex items-center gap-2.5 relative z-10">
-          <img src="/logo.jpeg" alt="TradeX Logo" className="h-9 w-auto object-contain rounded-lg" />
-          <span className="text-white text-xl font-bold tracking-tight">TradeX</span>
+          <img src={logoImg} alt="TradeVault Logo" className="h-9 w-auto object-contain rounded-lg" />
+          <span className="text-white text-xl font-bold tracking-tight">TradeVault</span>
         </div>
 
         <div className="space-y-8 relative z-10">
@@ -94,8 +95,8 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-2 mb-8">
-            <img src="/logo.jpeg" alt="TradeX Logo" className="h-8 w-auto object-contain rounded-md" />
-            <span className="text-lg font-bold text-foreground">TradeX</span>
+            <img src={logoImg} alt="TradeVault Logo" className="h-8 w-auto object-contain rounded-md" />
+            <span className="text-lg font-bold text-foreground">TradeVault</span>
           </div>
 
           <h2 className="text-2xl font-bold text-foreground mb-1">

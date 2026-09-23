@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Layers, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import logoImg from '@/assets/logo.png';
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -18,9 +19,9 @@ export function OnboardingPage() {
       <div className="max-w-2xl w-full bg-white border border-border rounded-3xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-7 flex items-center gap-4">
-          <img src="/logo.jpeg" alt="TradeX Logo" className="h-10 w-auto object-contain rounded-xl" />
+          <img src={logoImg} alt="TradeVault Logo" className="h-10 w-auto object-contain rounded-xl" />
           <div>
-            <h1 className="text-xl font-bold text-white">Welcome to TradeX</h1>
+            <h1 className="text-xl font-bold text-white">Welcome to TradeVault</h1>
             <p className="text-indigo-100 text-sm mt-0.5">Customize your simulation environment — no broker keys required</p>
           </div>
         </div>
@@ -37,7 +38,7 @@ export function OnboardingPage() {
                 <span className="bg-emerald-200/70 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">100% Risk Free</span>
               </p>
               <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                TradeX provides a complete virtual paper trading environment with simulated live data feeds. You can explore multi-agent AI debates, test quant strategies, and backtest without needing to enter any broker keys.
+                TradeVault provides a complete virtual paper trading environment with simulated live data feeds. You can explore multi-agent AI debates, test quant strategies, and backtest without needing to enter any broker keys.
               </p>
             </div>
           </div>
@@ -113,7 +114,7 @@ export function OnboardingPage() {
               type="submit"
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-7 rounded-xl text-sm transition-all shadow-md shadow-indigo-500/25 flex items-center gap-2"
             >
-              <span>Enter TradeX Terminal</span>
+              <span>Enter TradeVault Terminal</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

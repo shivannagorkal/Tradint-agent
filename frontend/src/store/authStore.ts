@@ -16,6 +16,6 @@ export const useAuthStore = create<AuthState>()(
       login: (name, email) => set({ isAuthenticated: true, user: { name, email } }),
       logout: () => set({ isAuthenticated: false, user: null }),
     }),
-    { name: 'tradex-auth' }
+    { name: 'tradevault-auth' }
   )
 );

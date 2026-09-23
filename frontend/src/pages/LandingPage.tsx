@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { InteractiveDotGrid } from '../components/common/InteractiveDotGrid';
+import logoImg from '@/assets/logo.png';
 import {
   Layers,
   ArrowRight,
@@ -181,12 +182,12 @@ export function LandingPage() {
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <img
-              src="/logo.jpeg"
-              alt="TradeX Logo"
+              src={logoImg}
+              alt="TradeVault Logo"
               className="h-8 w-auto object-contain rounded-lg shadow-sm border border-slate-100 group-hover:scale-105 transition-transform"
             />
             <div className="flex flex-col">
-              <span className="text-base font-black tracking-tight text-slate-900 leading-none">TradeX</span>
+              <span className="text-base font-black tracking-tight text-slate-900 leading-none">TradeVault</span>
               <span className="text-[9px] text-slate-400 font-semibold tracking-wide uppercase mt-0.5">Multi-Agent Quant</span>
             </div>
           </Link>
@@ -349,7 +350,7 @@ export function LandingPage() {
 
           {/* Subtitle */}
           <p className="animate-hero-fade-3 mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
-            Eliminate single-model hallucinations and backtest curve-fitting. TradeX pits specialized AI analysts against each other in real-time debate, governed by Deflated Sharpe Ratios, probabilistic quantiles, and automated risk vetoes.
+            Eliminate single-model hallucinations and backtest curve-fitting. TradeVault pits specialized AI analysts against each other in real-time debate, governed by Deflated Sharpe Ratios, probabilistic quantiles, and automated risk vetoes.
           </p>
 
           {/* CTA Buttons */}
@@ -423,11 +424,10 @@ export function LandingPage() {
                 <button
                   key={ticker}
                   onClick={() => setSelectedTicker(ticker)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all min-w-0 ${
-                    selectedTicker === ticker
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all min-w-0 ${selectedTicker === ticker
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                 >
                   <span className="font-extrabold">{ticker}</span>
                   <span className={`text-[11px] sm:text-xs font-semibold ${selectedTicker === ticker ? 'text-indigo-200' : 'text-slate-400'}`}>
@@ -464,27 +464,24 @@ export function LandingPage() {
               <div className="w-full sm:w-auto flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl text-xs font-semibold">
                 <button
                   onClick={() => setActiveTab('debate')}
-                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${
-                    activeTab === 'debate' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${activeTab === 'debate' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   <span className="sm:hidden">Debate</span>
                   <span className="hidden sm:inline">Multi-Agent Debate</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('quant')}
-                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${
-                    activeTab === 'quant' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${activeTab === 'quant' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   <span className="sm:hidden">Signals</span>
                   <span className="hidden sm:inline">Specialist Signals</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('risk')}
-                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${
-                    activeTab === 'risk' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[11px] sm:text-xs ${activeTab === 'risk' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   <span className="sm:hidden">Risk & Sizing</span>
                   <span className="hidden sm:inline">Risk Veto & Sizing</span>
@@ -587,11 +584,10 @@ export function LandingPage() {
                         <p className="text-base font-bold text-white mt-0.5">{activeStock.debate.consensus}</p>
                       </div>
                       <div className="text-right">
-                        <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold ${
-                          activeStock.quant.status.includes('APPROVED')
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                        }`}>
+                        <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold ${activeStock.quant.status.includes('APPROVED')
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          }`}>
                           {activeStock.quant.status}
                         </span>
                       </div>
@@ -690,7 +686,7 @@ export function LandingPage() {
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                Live backtesting verification executed via TradeX Python microservice
+                Live backtesting verification executed via TradeVault Python microservice
               </span>
               <Link
                 to="/proposals"
@@ -717,7 +713,7 @@ export function LandingPage() {
               Engineered for Speed, Precision & Zero Data Leakage
             </h2>
             <p className="mt-3 text-slate-600 text-base leading-relaxed">
-              TradeX decouples high-speed UI streaming, secure API credential vaults, and Python quantitative computing into a high-performance modular monorepo.
+              TradeVault decouples high-speed UI streaming, secure API credential vaults, and Python quantitative computing into a high-performance modular monorepo.
             </p>
           </div>
 
@@ -725,11 +721,10 @@ export function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mb-8">
             <button
               onClick={() => setArchitectureLayer('frontend')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
-                architectureLayer === 'frontend'
-                  ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
-                  : 'bg-white border-slate-200 hover:border-slate-300'
-              }`}
+              className={`p-4 rounded-2xl border text-left transition-all ${architectureLayer === 'frontend'
+                ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
             >
               <div className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2">
                 <Terminal className="h-4 w-4" />
@@ -740,11 +735,10 @@ export function LandingPage() {
 
             <button
               onClick={() => setArchitectureLayer('gateway')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
-                architectureLayer === 'gateway'
-                  ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
-                  : 'bg-white border-slate-200 hover:border-slate-300'
-              }`}
+              className={`p-4 rounded-2xl border text-left transition-all ${architectureLayer === 'gateway'
+                ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
             >
               <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center mb-2">
                 <Server className="h-4 w-4" />
@@ -755,11 +749,10 @@ export function LandingPage() {
 
             <button
               onClick={() => setArchitectureLayer('runtime')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
-                architectureLayer === 'runtime'
-                  ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
-                  : 'bg-white border-slate-200 hover:border-slate-300'
-              }`}
+              className={`p-4 rounded-2xl border text-left transition-all ${architectureLayer === 'runtime'
+                ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
             >
               <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center mb-2">
                 <Cpu className="h-4 w-4" />
@@ -770,11 +763,10 @@ export function LandingPage() {
 
             <button
               onClick={() => setArchitectureLayer('quant')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
-                architectureLayer === 'quant'
-                  ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
-                  : 'bg-white border-slate-200 hover:border-slate-300'
-              }`}
+              className={`p-4 rounded-2xl border text-left transition-all ${architectureLayer === 'quant'
+                ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
             >
               <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2">
                 <BarChart3 className="h-4 w-4" />
@@ -809,7 +801,7 @@ export function LandingPage() {
                   </div>
                   <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-xs">
                     <p className="font-bold text-slate-800">Shared Contracts</p>
-                    <p className="text-slate-500 mt-1">@tradex/shared-schemas</p>
+                    <p className="text-slate-500 mt-1">@tradevault/shared-schemas</p>
                   </div>
                 </div>
               </div>
@@ -918,7 +910,7 @@ export function LandingPage() {
               Why Multi-Agent Intelligence Outperforms Single LLMs
             </h2>
             <p className="mt-3 text-slate-600 text-base leading-relaxed">
-              Standard chatbots hallucinate and agree with user bias. TradeX combines formal debate protocols with quantitative statistical validation.
+              Standard chatbots hallucinate and agree with user bias. TradeVault combines formal debate protocols with quantitative statistical validation.
             </p>
           </div>
 
@@ -1013,7 +1005,7 @@ export function LandingPage() {
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200">
                     <th className="p-5 font-bold text-slate-700">Capability</th>
-                    <th className="p-5 font-black text-indigo-700 bg-indigo-50/50">TradeX Multi-Agent</th>
+                    <th className="p-5 font-black text-indigo-700 bg-indigo-50/50">TradeVault Multi-Agent</th>
                     <th className="p-5 font-semibold text-slate-500">Naive ChatGPT / Claude</th>
                     <th className="p-5 font-semibold text-slate-500">Traditional Grid / DCA Bot</th>
                   </tr>
@@ -1090,7 +1082,7 @@ export function LandingPage() {
               </h2>
 
               <p className="mt-4 text-indigo-200 text-base max-w-2xl leading-relaxed">
-                We believe algorithmic trading platforms must be defensive by default. TradeX prevents unauthorized live execution through multiple cryptographic and procedural layers.
+                We believe algorithmic trading platforms must be defensive by default. TradeVault prevents unauthorized live execution through multiple cryptographic and procedural layers.
               </p>
 
               <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1137,11 +1129,11 @@ export function LandingPage() {
           <div className="space-y-4">
             {[
               {
-                q: 'How does TradeX differ from asking ChatGPT for trading ideas?',
-                a: 'Standard LLMs give single-shot, sycophantic advice without testing their own counter-theses or calculating statistical overfitting. TradeX conducts multi-agent adversarial debates between dedicated Bull and Bear researchers, computes 5 quantitative factors, checks Deflated Sharpe Ratios, and strictly halts trades if the strategy fails paper trading eligibility.',
+                q: 'How does TradeVault differ from asking ChatGPT for trading ideas?',
+                a: 'Standard LLMs give single-shot, sycophantic advice without testing their own counter-theses or calculating statistical overfitting. TradeVault conducts multi-agent adversarial debates between dedicated Bull and Bear researchers, computes 5 quantitative factors, checks Deflated Sharpe Ratios, and strictly halts trades if the strategy fails paper trading eligibility.',
               },
               {
-                q: 'Is my real money at risk when running TradeX?',
+                q: 'Is my real money at risk when running TradeVault?',
                 a: 'No. The platform defaults 100% to Alpaca Paper Trading. Live execution is disabled by default (ALLOW_LIVE_TRADING=false) and requires an explicit timed confirmation in the UI to unlock for a 24-hour window.',
               },
               {
@@ -1150,7 +1142,7 @@ export function LandingPage() {
               },
               {
                 q: 'What is the Overfitting Gate and why is it mandatory?',
-                a: 'Backtest overfitting occurs when a trading strategy looks profitable simply due to random noise in historical data. TradeX uses Combinatorially Symmetric Cross-Validation (CSCV) and Deflated Sharpe Ratios (DSR) to calculate the Probability of Backtest Overfitting (PBO). If PBO is high, the system forcibly vetoes the trade and locks the action to "HOLD".',
+                a: 'Backtest overfitting occurs when a trading strategy looks profitable simply due to random noise in historical data. TradeVault uses Combinatorially Symmetric Cross-Validation (CSCV) and Deflated Sharpe Ratios (DSR) to calculate the Probability of Backtest Overfitting (PBO). If PBO is high, the system forcibly vetoes the trade and locks the action to "HOLD".',
               },
               {
                 q: 'How do I run the full platform on my local machine?',
@@ -1167,9 +1159,8 @@ export function LandingPage() {
                 >
                   <span>{item.q}</span>
                   <ChevronDown
-                    className={`h-5 w-5 text-slate-400 shrink-0 transition-transform ${
-                      openFaq === idx ? 'rotate-180 text-indigo-600' : ''
-                    }`}
+                    className={`h-5 w-5 text-slate-400 shrink-0 transition-transform ${openFaq === idx ? 'rotate-180 text-indigo-600' : ''
+                      }`}
                   />
                 </button>
                 {openFaq === idx && (
@@ -1193,7 +1184,7 @@ export function LandingPage() {
               Ready to Upgrade to Committee-Driven AI Trading?
             </h2>
             <p className="mt-4 text-slate-600 text-base max-w-xl mx-auto leading-relaxed">
-              Launch the TradeX terminal now in Paper Sandbox mode. No financial commitment required.
+              Launch the TradeVault terminal now in Paper Sandbox mode. No financial commitment required.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1221,8 +1212,8 @@ export function LandingPage() {
       <footer className="bg-white border-t border-slate-200/80 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.jpeg" alt="TradeX" className="h-7 w-auto object-contain rounded-md" />
-            <span className="font-bold text-slate-900 text-base">TradeX</span>
+            <img src={logoImg} alt="TradeVault" className="h-7 w-auto object-contain rounded-md" />
+            <span className="font-bold text-slate-900 text-base">TradeVault</span>
             <span className="text-xs text-slate-400">© 2026. All rights reserved.</span>
           </div>
 

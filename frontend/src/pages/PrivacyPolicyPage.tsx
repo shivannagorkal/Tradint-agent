@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Layers, ArrowLeft, Shield, Lock, Eye, Database, Globe, UserCheck } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 export function PrivacyPolicyPage() {
   const lastUpdated = 'September 23, 2026';
@@ -10,8 +11,8 @@ export function PrivacyPolicyPage() {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo.jpeg" alt="TradeX Logo" className="h-8 w-auto object-contain rounded-lg" />
-            <span className="font-bold text-base text-slate-900 tracking-tight">TradeX</span>
+            <img src={logoImg} alt="TradeVault Logo" className="h-8 w-auto object-contain rounded-lg" />
+            <span className="font-bold text-base text-slate-900 tracking-tight">TradeVault</span>
           </Link>
 
           <Link
@@ -36,7 +37,7 @@ export function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
-            At TradeX, we are committed to protecting your privacy and securing your quantitative trading telemetry and broker credentials with enterprise-grade cryptographic standards.
+            At TradeVault, we are committed to protecting your privacy and securing your quantitative trading telemetry and broker credentials with enterprise-grade cryptographic standards.
           </p>
           <div className="mt-6 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
             <span>Effective Date: <strong>{lastUpdated}</strong></span>
@@ -53,7 +54,7 @@ export function PrivacyPolicyPage() {
               <h2>Information We Collect</h2>
             </div>
             <p>
-              When you use TradeX (including our web platform, APIs, and multi-agent AI advisory services), we collect the following categories of information:
+              When you use TradeVault (including our web platform, APIs, and multi-agent AI advisory services), we collect the following categories of information:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-slate-600">
               <li>
@@ -78,7 +79,7 @@ export function PrivacyPolicyPage() {
               <h2>Zero-Trust Cryptographic Protection of API Keys</h2>
             </div>
             <p>
-              TradeX employs a strict zero-trust security architecture for all third-party credentials:
+              TradeVault employs a strict zero-trust security architecture for all third-party credentials:
             </p>
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2 text-xs sm:text-sm">
               <p className="font-semibold text-slate-900 flex items-center gap-2">
@@ -98,7 +99,7 @@ export function PrivacyPolicyPage() {
               <h2>Multi-Agent AI & Third-Party LLM Providers</h2>
             </div>
             <p>
-              TradeX coordinates multi-model debate workflows across providers including Groq (DeepSeek-R1), Google (Gemini 2.0 Flash), Mistral AI, and NVIDIA NIM.
+              TradeVault coordinates multi-model debate workflows across providers including Groq (DeepSeek-R1), Google (Gemini 2.0 Flash), Mistral AI, and NVIDIA NIM.
             </p>
             <p>
               <strong>Data Privacy Boundary:</strong> Market OHLCV price bars, public 10-K filings, and macroeconomic indicators sent to LLM providers contain strictly anonymized market data. Your personal identity, account balance, broker credentials, or trading volume are <em>never</em> sent to external generative AI model providers.
@@ -112,7 +113,7 @@ export function PrivacyPolicyPage() {
               <h2>Simulated Paper Trading Sandbox Default</h2>
             </div>
             <p>
-              By default, all TradeX accounts are provisioned exclusively in a simulated paper trading sandbox. No live capital is at risk. You are not required to provide real financial account details or credit card information to use TradeX.
+              By default, all TradeVault accounts are provisioned exclusively in a simulated paper trading sandbox. No live capital is at risk. You are not required to provide real financial account details or credit card information to use TradeVault.
             </p>
           </section>
 
@@ -123,7 +124,7 @@ export function PrivacyPolicyPage() {
               <h2>Immutable Audit Logging & Retention</h2>
             </div>
             <p>
-              To maintain institutional compliance and protect users against unintended trading activity, TradeX logs all proposal creations, risk vetoes, emergency kill-switch activations, and order executions into a tamper-evident, append-only database collection.
+              To maintain institutional compliance and protect users against unintended trading activity, TradeVault logs all proposal creations, risk vetoes, emergency kill-switch activations, and order executions into a tamper-evident, append-only database collection.
             </p>
             <p>
               These logs are retained for a minimum of 24 months for forensic and compliance auditing, protected against unauthorized modification or deletion.
@@ -154,8 +155,8 @@ export function PrivacyPolicyPage() {
             </div>
             <p className="text-slate-600">
               For security disclosures, privacy requests, or questions regarding our cryptographic safeguards, contact our security team at{' '}
-              <a href="mailto:privacy@tradex.local" className="text-indigo-600 font-semibold hover:underline">
-                privacy@tradex.local
+              <a href="mailto:privacy@tradevault.local" className="text-indigo-600 font-semibold hover:underline">
+                privacy@tradevault.local
               </a>.
             </p>
           </section>
@@ -163,7 +164,7 @@ export function PrivacyPolicyPage() {
 
         {/* Footer */}
         <div className="mt-12 text-center text-xs text-slate-400">
-          <p>© 2026 TradeX. All rights reserved. Built for institutional quantitative intelligence.</p>
+          <p>© 2026 TradeVault. All rights reserved. Built for institutional quantitative intelligence.</p>
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, ArrowLeft, Mail, CheckCircle2, Lock, KeyRound, ArrowRight } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -62,8 +63,8 @@ export function ForgotPasswordPage() {
         {/* Top Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-6 text-white flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo.jpeg" alt="TradeX Logo" className="h-8 w-auto object-contain rounded-lg" />
-            <span className="font-bold text-base text-white tracking-tight">TradeX</span>
+            <img src={logoImg} alt="TradeVault Logo" className="h-8 w-auto object-contain rounded-lg" />
+            <span className="font-bold text-base text-white tracking-tight">TradeVault</span>
           </Link>
           <Link
             to="/login"
@@ -84,7 +85,7 @@ export function ForgotPasswordPage() {
 
               <h1 className="text-2xl font-bold text-slate-900">Forgot password?</h1>
               <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
-                No worries. Enter the email address linked to your TradeX account and we’ll send you password recovery instructions.
+                No worries. Enter the email address linked to your TradeVault account and we’ll send you password recovery instructions.
               </p>
 
               <form onSubmit={handleSendReset} className="mt-6 space-y-4">

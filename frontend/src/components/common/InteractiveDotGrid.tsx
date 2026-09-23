@@ -7,6 +7,7 @@ interface InteractiveDotGridProps {
   baseRadius?: number;
   hoverRadius?: number;
   spotlightRadius?: number;
+  isFixed?: boolean;
 }
 
 interface Ripple {
@@ -24,6 +25,7 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
   baseRadius = 1.3,
   hoverRadius = 3.2,
   spotlightRadius = 160,
+  isFixed = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -50,12 +52,17 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
 
     // Resize handler
     const updateSize = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = parent.clientWidth;
-      height = parent.clientHeight;
+
+      if (isFixed) {
+        width = window.innerWidth;
+        height = window.innerHeight;
+      } else {
+        const parent = canvas.parentElement;
+        if (!parent) return;
+        width = parent.clientWidth;
+        height = parent.clientHeight;
+      }
 
       canvas.width = width * dpr;
       canvas.height = height * dpr;
@@ -70,7 +77,9 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
     const resizeObserver = new ResizeObserver(() => {
       updateSize();
     });
-    if (canvas.parentElement) {
+    if (isFixed) {
+      window.addEventListener('resize', updateSize);
+    } else if (canvas.parentElement) {
       resizeObserver.observe(canvas.parentElement);
     }
 
@@ -157,11 +166,6 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
       const offsetX = (width % dotSpacing) / 2;
       const offsetY = (height % dotSpacing) / 2;
 
-      // Center vignette radius
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const maxDistFromCenter = Math.hypot(centerX, centerY);
-
       // Draw dots
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -173,17 +177,13 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
           const dy = mouseY - originY;
           const distToMouse = Math.hypot(dx, dy);
 
-          // Distance from center (for smooth vignette)
-          const distToCenter = Math.hypot(originX - centerX, originY - centerY);
-          const vignette = Math.max(0, 1 - Math.pow(distToCenter / (maxDistFromCenter * 0.72), 2));
-
           // Base ambient wave (subtle living motion)
-          const ambientWave = Math.sin(time + originX * 0.025 + originY * 0.025) * 0.15;
+          const ambientWave = Math.sin(time + originX * 0.025 + originY * 0.025) * 0.12;
 
           let currentX = originX;
           let currentY = originY;
           let currentRadius = baseRadius;
-          let alpha = Math.min(1, Math.max(0.12, (0.28 + ambientWave) * vignette));
+          let alpha = Math.min(1, Math.max(0.18, 0.32 + ambientWave));
           let isHovered = false;
 
           // Mouse spotlight & dispersion
@@ -215,24 +215,22 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
             }
           }
 
-          // Only render if visible
-          if (alpha > 0.02) {
-            ctx.beginPath();
-            ctx.arc(currentX, currentY, currentRadius, 0, Math.PI * 2);
+          // Render dot
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, currentRadius, 0, Math.PI * 2);
 
-            if (isHovered) {
-              // Vibrant glowing indigo for hovered dots
-              ctx.fillStyle = `rgba(79, 70, 229, ${alpha})`;
-              ctx.shadowColor = 'rgba(99, 102, 241, 0.6)';
-              ctx.shadowBlur = 6;
-            } else {
-              // Elegant refined indigo/slate for ambient dots
-              ctx.fillStyle = `rgba(99, 102, 241, ${alpha * 0.85})`;
-              ctx.shadowBlur = 0;
-            }
-
-            ctx.fill();
+          if (isHovered) {
+            // Vibrant glowing indigo for hovered dots
+            ctx.fillStyle = `rgba(79, 70, 229, ${alpha})`;
+            ctx.shadowColor = 'rgba(99, 102, 241, 0.6)';
+            ctx.shadowBlur = 6;
+          } else {
+            // Elegant refined indigo for ambient dots
+            ctx.fillStyle = `rgba(99, 102, 241, ${alpha * 0.85})`;
+            ctx.shadowBlur = 0;
           }
+
+          ctx.fill();
         }
       }
 
@@ -244,16 +242,19 @@ export const InteractiveDotGrid: React.FC<InteractiveDotGridProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
+      if (isFixed) {
+        window.removeEventListener('resize', updateSize);
+      }
       window.removeEventListener('mousemove', handlePointerMove);
       window.removeEventListener('mouseleave', handlePointerLeave);
       targetEl.removeEventListener('click', handleClick as EventListener);
     };
-  }, [containerRef, dotSpacing, baseRadius, hoverRadius, spotlightRadius]);
+  }, [containerRef, dotSpacing, baseRadius, hoverRadius, spotlightRadius, isFixed]);
 
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 w-full h-full pointer-events-none z-0 ${className}`}
+      className={`${isFixed ? 'fixed inset-0 w-screen h-screen' : 'absolute inset-0 w-full h-full'} pointer-events-none z-0 ${className}`}
       aria-hidden="true"
     />
   );
