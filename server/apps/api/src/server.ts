@@ -30,10 +30,19 @@ const httpServer = http.createServer(app);
 // Request logger: prints every request and response path in the terminal
 app.use(morgan("dev"));
 
-// Middlewares
+// Parse CLIENT_URL for multiple origins (comma-separated)
+const allowedOrigins = env.CLIENT_URL.split(",").map((o) => o.trim()).filter(Boolean);
+
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.some((allowed) => origin === allowed || allowed === "*")) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
   })
 );

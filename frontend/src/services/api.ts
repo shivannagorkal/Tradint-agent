@@ -40,11 +40,15 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+const baseAlreadyHasApi = API_BASE_URL.endsWith("/api");
 
 async function request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  const path = normalizedEndpoint.startsWith("/api") ? normalizedEndpoint : `/api${normalizedEndpoint}`;
+  // Only prepend /api if the base URL doesn't already include it
+  const path = baseAlreadyHasApi || normalizedEndpoint.startsWith("/api")
+    ? normalizedEndpoint
+    : `/api${normalizedEndpoint}`;
   const url = `${API_BASE_URL}${path}`;
 
   const headers: Record<string, string> = {

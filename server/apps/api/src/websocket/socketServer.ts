@@ -7,9 +7,17 @@ import { AuthenticatedUser } from "../middleware/auth";
 let io: SocketIOServer | null = null;
 
 export function initSocketServer(httpServer: HttpServer): SocketIOServer {
+  const allowedOrigins = env.CLIENT_URL.split(",").map((o) => o.trim()).filter(Boolean);
+
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.some((a) => origin === a || a === "*")) {
+          return callback(null, true);
+        }
+        callback(new Error("CORS blocked"));
+      },
       credentials: true,
     },
   });
