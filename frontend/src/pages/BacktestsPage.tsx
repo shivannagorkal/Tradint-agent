@@ -14,6 +14,10 @@ export function BacktestsPage() {
   const { data: backtests = [], isLoading } = useQuery<BacktestItem[]>({
     queryKey: ['backtests'],
     queryFn: backtestService.getBacktests,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.some((b) => b.status === 'running' || b.status === 'pending') ? 1500 : false;
+    },
   });
 
   const launchMutation = useMutation({

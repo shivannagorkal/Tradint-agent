@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, LineChart, List, History, FileSearch, Settings, X, Layers
+  LayoutDashboard, LineChart, List, History, FileSearch, Settings, X, Layers, Network
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,6 +10,7 @@ import logoImg from '@/assets/logo.png';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Watchlist', href: '/watchlist', icon: List },
+  { name: 'Orchestration', href: '/orchestration', icon: Network },
   { name: 'Proposals', href: '/proposals', icon: FileSearch },
   { name: 'Backtests', href: '/backtests', icon: LineChart },
   { name: 'Orders', href: '/orders', icon: History },

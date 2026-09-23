@@ -3,6 +3,12 @@ import { api } from "./api";
 export interface WatchlistEnrichedItem {
   id: string;
   ticker: string;
+  companyName?: string;
+  currency?: string;
+  price?: number;
+  previousClose?: number;
+  change?: number;
+  changePct?: number;
   assetClass: "equity" | "crypto";
   createdAt: string;
   factors: {

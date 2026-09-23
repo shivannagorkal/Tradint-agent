@@ -21,9 +21,14 @@ import { killSwitchRouter } from "./routes/killSwitch";
 import { auditLogRouter } from "./routes/auditLog";
 import { adminRouter } from "./routes/admin";
 import { marketRouter } from "./routes/market";
+import { predictionRouter } from "./routes/prediction.routes";
+import morgan from "morgan";
 
 export const app = express();
 const httpServer = http.createServer(app);
+
+// Request logger: prints every request and response path in the terminal
+app.use(morgan("dev"));
 
 // Middlewares
 app.use(
@@ -35,6 +40,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
+
 
 // Health check endpoints
 const healthCheckHandler = (req: Request, res: Response) => {
@@ -63,6 +69,7 @@ app.use("/api", killSwitchRouter);
 app.use("/api", auditLogRouter);
 app.use("/api", adminRouter);
 app.use("/api", marketRouter);
+app.use("/api/prediction", predictionRouter);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

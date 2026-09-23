@@ -53,4 +53,32 @@ describe("Authentication & RBAC Middleware", () => {
     expect(next).toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
   });
+
+  it("should successfully log in and return a JWT token without buffering timeout", async () => {
+    const supertest = (await import("supertest")).default;
+    const { app } = await import("../src/server");
+
+    const res = await supertest(app)
+      .post("/api/auth/login")
+      .send({ email: "demo@confluence.trade", password: "password123" });
+
+    expect([200, 201]).toContain(res.status);
+    expect(res.body).toHaveProperty("token");
+    expect(res.body.user).toHaveProperty("email", "demo@confluence.trade");
+  });
+
+  it("should successfully register a new user in resilient mode", async () => {
+    const supertest = (await import("supertest")).default;
+    const { app } = await import("../src/server");
+
+    const testEmail = `trader_${Date.now()}@example.com`;
+    const res = await supertest(app)
+      .post("/api/auth/register")
+      .send({ email: testEmail, password: "SecurePassword123!", displayName: "Test User" });
+
+    expect([200, 201]).toContain(res.status);
+    expect(res.body).toHaveProperty("token");
+    expect(res.body.user).toHaveProperty("email", testEmail);
+  });
 });
+

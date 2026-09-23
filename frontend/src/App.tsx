@@ -6,6 +6,7 @@ import { AuthPage } from './pages/AuthPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { WatchlistPage } from './pages/WatchlistPage';
+import { OrchestrationPage } from './pages/OrchestrationPage';
 import { ProposalsPage } from './pages/ProposalsPage';
 import { BacktestsPage } from './pages/BacktestsPage';
 import { OrdersPage } from './pages/OrdersPage';
@@ -59,6 +60,7 @@ function App() {
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/watchlist" element={<WatchlistPage />} />
+              <Route path="/orchestration" element={<OrchestrationPage />} />
               <Route path="/proposals" element={<ProposalsPage />} />
               <Route path="/backtests" element={<BacktestsPage />} />
               <Route path="/orders" element={<OrdersPage />} />

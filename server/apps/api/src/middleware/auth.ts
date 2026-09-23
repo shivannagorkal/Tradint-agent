@@ -38,3 +38,21 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ error: "Invalid or expired session token." });
   }
 }
+
+/**
+ * Middleware: Optionally attaches authenticated user if valid token exists.
+ */
+export function optionalAuth(req: Request, res: Response, next: NextFunction): void {
+  const token =
+    req.cookies?.[env.SESSION_COOKIE_NAME] ||
+    req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET) as AuthenticatedUser;
+      req.user = decoded;
+    } catch (err) {}
+  }
+  next();
+}
+

@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import {
   onboardingSchema,
   updateRiskProfileSchema,
   confirmLiveTradingSchema,
 } from "@confluence/shared-schemas";
 import { User, RiskProfile, ApiCredential, KillSwitchState } from "../db/models";
+import { inMemoryStore } from "../db/inMemoryStore";
 import { env } from "../config/env";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
@@ -21,6 +23,7 @@ onboardingRouter.post(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const data = req.body;
+      const isDbReady = mongoose.connection.readyState === 1;
 
       // Check if user is already authenticated via session cookie or Authorization header
       let currentUser: any = null;
@@ -31,11 +34,16 @@ onboardingRouter.post(
       if (authToken) {
         try {
           const decoded = jwt.verify(authToken, env.JWT_SECRET) as any;
-          currentUser = await User.findById(decoded.id);
+          if (isDbReady) {
+            currentUser = await User.findById(decoded.id);
+          } else {
+            currentUser = await inMemoryStore.findUserById(decoded.id);
+          }
         } catch {
           // Token invalid, proceed with registration flow
         }
       }
+
 
       let user = currentUser;
 
@@ -46,65 +54,98 @@ onboardingRouter.post(
           return;
         }
 
-        const existing = await User.findOne({ email: data.email.toLowerCase() });
-        if (existing) {
-          // Check if password matches to allow onboarding for existing user
-          const isMatch = await bcrypt.compare(data.password, existing.passwordHash);
-          if (!isMatch) {
-            res.status(409).json({ error: "User already exists with this email address." });
-            return;
+        if (isDbReady) {
+          const existing = await User.findOne({ email: data.email.toLowerCase() });
+          if (existing) {
+            const isMatch = await bcrypt.compare(data.password, existing.passwordHash);
+            if (!isMatch) {
+              res.status(409).json({ error: "User already exists with this email address." });
+              return;
+            }
+            user = existing;
+          } else {
+            const passwordHash = await bcrypt.hash(data.password, 10);
+            user = await User.create({
+              email: data.email.toLowerCase(),
+              passwordHash,
+              displayName: data.displayName,
+              role: "user",
+            });
           }
-          user = existing;
         } else {
-          const passwordHash = await bcrypt.hash(data.password, 10);
-          user = await User.create({
-            email: data.email.toLowerCase(),
-            passwordHash,
-            displayName: data.displayName,
-            role: "user",
-          });
+          const existing = await inMemoryStore.findUserByEmail(data.email);
+          if (existing) {
+            const isMatch = await bcrypt.compare(data.password, existing.passwordHash);
+            if (!isMatch) {
+              res.status(409).json({ error: "User already exists with this email address." });
+              return;
+            }
+            user = existing;
+          } else {
+            const passwordHash = await bcrypt.hash(data.password, 10);
+            user = await inMemoryStore.createUser({
+              email: data.email.toLowerCase(),
+              passwordHash,
+              displayName: data.displayName,
+              role: "user",
+            });
+          }
         }
       }
 
       // Create or Update Risk Profile
-      const riskProfile = await RiskProfile.findOneAndUpdate(
-        { userId: user._id },
-        {
-          userId: user._id,
+      let riskProfile: any = null;
+      if (isDbReady) {
+        riskProfile = await RiskProfile.findOneAndUpdate(
+          { userId: user._id },
+          {
+            userId: user._id,
+            riskCategory: data.riskCategory || "balanced",
+            allocatableCapital: data.allocatableCapital || 10000,
+            maxPositionPct: data.maxPositionPct || 10,
+            maxDailyLossPct: data.maxDailyLossPct || 3,
+            liveTradingEnabled: false,
+          },
+          { upsert: true, new: true }
+        );
+
+        // Encrypt & Store Alpaca Paper Credentials (if provided)
+        if (data.alpacaPaperKey && data.alpacaPaperSecret) {
+          try {
+            const encryptedKey = encryptCredential(data.alpacaPaperKey);
+            const encryptedSecret = encryptCredential(data.alpacaPaperSecret);
+
+            await ApiCredential.findOneAndUpdate(
+              { userId: user._id, provider: "alpaca_paper" },
+              {
+                userId: user._id,
+                provider: "alpaca_paper",
+                encryptedKey: encryptedKey.ciphertext,
+                encryptedSecret: encryptedSecret.ciphertext,
+                keyIv: encryptedKey.iv,
+                keyAuthTag: encryptedKey.authTag,
+              },
+              { upsert: true }
+            );
+          } catch (e) {}
+        }
+
+        // Initialize Kill Switch State if not existing
+        try {
+          await KillSwitchState.findOneAndUpdate(
+            { userId: user._id },
+            { $setOnInsert: { userId: user._id, isEngaged: false } },
+            { upsert: true }
+          );
+        } catch (e) {}
+      } else {
+        riskProfile = inMemoryStore.setRiskProfile(user._id.toString(), {
           riskCategory: data.riskCategory || "balanced",
           allocatableCapital: data.allocatableCapital || 10000,
           maxPositionPct: data.maxPositionPct || 10,
           maxDailyLossPct: data.maxDailyLossPct || 3,
-          liveTradingEnabled: false,
-        },
-        { upsert: true, new: true }
-      );
-
-      // Encrypt & Store Alpaca Paper Credentials (if provided)
-      if (data.alpacaPaperKey && data.alpacaPaperSecret) {
-        const encryptedKey = encryptCredential(data.alpacaPaperKey);
-        const encryptedSecret = encryptCredential(data.alpacaPaperSecret);
-
-        await ApiCredential.findOneAndUpdate(
-          { userId: user._id, provider: "alpaca_paper" },
-          {
-            userId: user._id,
-            provider: "alpaca_paper",
-            encryptedKey: encryptedKey.ciphertext,
-            encryptedSecret: encryptedSecret.ciphertext,
-            keyIv: encryptedKey.iv,
-            keyAuthTag: encryptedKey.authTag,
-          },
-          { upsert: true }
-        );
+        });
       }
-
-      // Initialize Kill Switch State if not existing
-      await KillSwitchState.findOneAndUpdate(
-        { userId: user._id },
-        { $setOnInsert: { userId: user._id, isEngaged: false } },
-        { upsert: true }
-      );
 
       const token = jwt.sign(
         { id: user._id.toString(), email: user.email, role: user.role, displayName: user.displayName },
@@ -119,17 +160,20 @@ onboardingRouter.post(
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      await logAuditEvent({
-        userId: user._id,
-        eventType: "onboarding_completed",
-        entityType: "risk_profile",
-        entityId: riskProfile._id.toString(),
-        payload: {
-          riskCategory: data.riskCategory,
-          capital: data.allocatableCapital,
-          maxPositionPct: data.maxPositionPct,
-        },
-      });
+      try {
+        await logAuditEvent({
+          userId: user._id,
+          eventType: "onboarding_completed",
+          entityType: "risk_profile",
+          entityId: riskProfile?._id?.toString() || user._id.toString(),
+          payload: {
+            riskCategory: data.riskCategory,
+            capital: data.allocatableCapital,
+            maxPositionPct: data.maxPositionPct,
+          },
+        });
+      } catch (e) {}
+
 
       res.status(201).json({
         success: true,
@@ -146,14 +190,17 @@ onboardingRouter.post(
 // Get current user's risk profile
 onboardingRouter.get("/risk-profile", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const profile = await RiskProfile.findOne({ userId: req.user!.id });
-    if (!profile) {
-      res.status(404).json({ error: "Risk profile not found." });
-      return;
+    const isDbReady = mongoose.connection.readyState === 1;
+    if (isDbReady) {
+      const profile = await RiskProfile.findOne({ userId: req.user!.id });
+      if (profile) {
+        res.json(profile);
+        return;
+      }
     }
-    res.json(profile);
+    res.json(inMemoryStore.getRiskProfile(req.user!.id));
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.json(inMemoryStore.getRiskProfile(req.user!.id));
   }
 });
 
@@ -164,25 +211,35 @@ onboardingRouter.put(
   validateBody(updateRiskProfileSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const updated = await RiskProfile.findOneAndUpdate(
-        { userId: req.user!.id },
-        { $set: req.body },
-        { new: true }
-      );
+      const isDbReady = mongoose.connection.readyState === 1;
+      let updated: any = null;
+      if (isDbReady) {
+        updated = await RiskProfile.findOneAndUpdate(
+          { userId: req.user!.id },
+          { $set: req.body },
+          { new: true, upsert: true }
+        );
+      }
+      if (!updated) {
+        updated = inMemoryStore.setRiskProfile(req.user!.id, req.body);
+      }
 
-      await logAuditEvent({
-        userId: req.user!.id,
-        eventType: "risk_profile_updated",
-        entityType: "risk_profile",
-        payload: req.body,
-      });
+      try {
+        await logAuditEvent({
+          userId: req.user!.id,
+          eventType: "risk_profile_updated",
+          entityType: "risk_profile",
+          payload: req.body,
+        });
+      } catch (e) {}
 
       res.json(updated);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      res.json(inMemoryStore.setRiskProfile(req.user!.id, req.body));
     }
   }
 );
+
 
 // Live Trading Gate Confirmation
 onboardingRouter.post(

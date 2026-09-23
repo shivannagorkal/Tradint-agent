@@ -105,22 +105,150 @@ async function fetchGrowwQuote(ticker: string): Promise<any> {
   return null;
 }
 
+// Search result interface
+export interface SearchResult {
+  symbol: string;
+  cleanTicker: string;
+  name: string;
+  exchange: string;
+  type: string;
+  currency: string;
+}
+
+// Helper to query Yahoo Finance autocomplete/search for any company name or ticker
+export async function searchSymbols(query: string): Promise<SearchResult[]> {
+  const cleanQ = query.trim();
+  if (!cleanQ) return [];
+
+  try {
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(cleanQ)}&quotesCount=8&newsCount=0`;
+    const resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+    });
+    if (resp.ok) {
+      const data: any = await resp.json();
+      const quotes = data.quotes || [];
+      return quotes
+        .filter((q: any) => q.symbol && (q.quoteType === "EQUITY" || q.quoteType === "INDEX" || q.quoteType === "ETF"))
+        .map((q: any) => {
+          const sym = q.symbol.toUpperCase();
+          const cleanTicker = sym.replace(/\.NS$|\.BO$/, "");
+          const isIndian = sym.endsWith(".NS") || sym.endsWith(".BO") || q.exchange === "NSI" || q.exchange === "BSE";
+          return {
+            symbol: sym,
+            cleanTicker,
+            name: q.shortname || q.longname || cleanTicker,
+            exchange: isIndian ? (sym.endsWith(".BO") ? "BSE" : "NSE") : (q.exchange || "US"),
+            type: q.quoteType || "EQUITY",
+            currency: isIndian ? "INR" : "USD",
+          };
+        });
+    }
+  } catch (err) {
+    console.warn(`[Market] Symbol search failed for "${cleanQ}":`, err);
+  }
+  return [];
+}
+
+// Universal resolver to convert any user input (e.g. "ADANI TOTAL GAS", "MODISON", "TCS") to real ticker
+export async function resolveSymbol(input: string): Promise<{
+  symbol: string;
+  cleanTicker: string;
+  companyName: string;
+  isIndian: boolean;
+  currency: string;
+}> {
+  const raw = input.trim();
+  const upper = raw.toUpperCase();
+  const clean = upper.replace(/\.NS$|\.BO$/, "");
+
+  // 1. Direct index match
+  if (INDEX_YAHOO_MAP[upper] || INDEX_YAHOO_MAP[clean]) {
+    return {
+      symbol: INDEX_YAHOO_MAP[clean] || INDEX_YAHOO_MAP[upper],
+      cleanTicker: clean,
+      companyName: clean === "NIFTY" ? "NIFTY 50" : clean === "SENSEX" ? "BSE SENSEX" : clean,
+      isIndian: true,
+      currency: "INR",
+    };
+  }
+
+  // 2. Direct Indian suffix
+  if (upper.endsWith(".NS") || upper.endsWith(".BO")) {
+    return {
+      symbol: upper,
+      cleanTicker: clean,
+      companyName: `${clean} Equity`,
+      isIndian: true,
+      currency: "INR",
+    };
+  }
+
+  // 3. Known Indian top equities
+  if (INDIAN_EQUITIES.has(clean)) {
+    return {
+      symbol: `${clean}.NS`,
+      cleanTicker: clean,
+      companyName: `${clean} Industries`,
+      isIndian: true,
+      currency: "INR",
+    };
+  }
+
+  // 4. Search Yahoo Finance to find exact company match
+  const searchResults = await searchSymbols(raw);
+  if (searchResults.length > 0) {
+    // Prefer Indian exchange match if input seems Indian or query matches
+    const indianMatch = searchResults.find((r) => r.symbol.endsWith(".NS") || r.symbol.endsWith(".BO") || r.exchange === "NSE" || r.exchange === "BSE");
+    const top = indianMatch || searchResults[0];
+    return {
+      symbol: top.symbol,
+      cleanTicker: top.cleanTicker,
+      companyName: top.name,
+      isIndian: top.currency === "INR" || top.symbol.endsWith(".NS") || top.symbol.endsWith(".BO"),
+      currency: top.currency,
+    };
+  }
+
+  // 5. Default fallback
+  const seemsIndian = !clean.includes(" ") && clean.length >= 3 && clean.length <= 12;
+  return {
+    symbol: seemsIndian ? `${clean}.NS` : clean,
+    cleanTicker: clean,
+    companyName: `${clean} Asset`,
+    isIndian: seemsIndian,
+    currency: seemsIndian ? "INR" : "USD",
+  };
+}
+
+// Endpoint: Search / Autocomplete companies
+marketRouter.get("/market/search", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const q = ((req.query.q as string) || "").trim();
+    if (!q) {
+      res.json({ results: [] });
+      return;
+    }
+    const results = await searchSymbols(q);
+    res.json({ results });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Fetch quote and live chart bars
 marketRouter.get("/market/quote/:ticker", async (req: Request, res: Response): Promise<void> => {
   try {
     const rawTicker = req.params.ticker;
-    const ticker = (Array.isArray(rawTicker) ? rawTicker[0] : rawTicker).toUpperCase().trim();
+    const tickerParam = (Array.isArray(rawTicker) ? rawTicker[0] : rawTicker).trim();
     const timeframe = ((req.query.timeframe as string) || "1M").toUpperCase();
 
-    const cleanTicker = ticker.replace(/\.NS$|\.BO$/, "");
-    const isIndian =
-      cleanTicker in INDEX_YAHOO_MAP ||
-      INDIAN_EQUITIES.has(cleanTicker) ||
-      ticker.endsWith(".NS") ||
-      ticker.endsWith(".BO");
+    // Dynamically resolve company name or symbol to exact market ticker
+    const resolved = await resolveSymbol(tickerParam);
+    const { symbol: yahooTicker, cleanTicker, isIndian } = resolved;
 
     // Fetch live quote from Groww API or agent runtime
-    const growwQuote = await fetchGrowwQuote(ticker);
+    const growwQuote = await fetchGrowwQuote(cleanTicker);
 
     // Map timeframe to Yahoo Finance range & interval
     let range = "1mo";
@@ -142,22 +270,29 @@ marketRouter.get("/market/quote/:ticker", async (req: Request, res: Response): P
       interval = "1wk";
     }
 
-    const yahooTicker =
-      INDEX_YAHOO_MAP[cleanTicker] ||
-      (isIndian && !ticker.includes(".") ? `${cleanTicker}.NS` : ticker);
+    // Try primary Yahoo ticker, fallback to .NS if needed
+    const candidateTickers = [yahooTicker];
+    if (!yahooTicker.endsWith(".NS") && !yahooTicker.startsWith("^") && !yahooTicker.includes(".")) {
+      candidateTickers.push(`${yahooTicker}.NS`);
+    }
 
     let result: any = null;
-    try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooTicker)}?range=${range}&interval=${interval}`;
-      const response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      });
-      if (response.ok) {
-        const json: any = await response.json();
-        result = json?.chart?.result?.[0];
+    for (const t of candidateTickers) {
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=${range}&interval=${interval}`;
+        const response = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+        });
+        if (response.ok) {
+          const json: any = await response.json();
+          if (json?.chart?.result?.[0]?.timestamp?.length) {
+            result = json.chart.result[0];
+            break;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn(`[Market] Yahoo Finance fetch attempt failed for ${t}:`, fetchErr);
       }
-    } catch (fetchErr) {
-      console.warn(`[Market] Yahoo Finance fetch failed for ${yahooTicker}:`, fetchErr);
     }
 
     if (result && result.timestamp && result.indicators?.quote?.[0]?.close) {
@@ -196,14 +331,16 @@ marketRouter.get("/market/quote/:ticker", async (req: Request, res: Response): P
 
         const companyName =
           growwQuote?.companyName ||
+          resolved.companyName ||
           meta.shortName ||
           meta.longName ||
-          (cleanTicker in INDEX_YAHOO_MAP ? cleanTicker : `${ticker} Stock`);
+          `${cleanTicker} Stock`;
 
-        const currency = isIndian || growwQuote ? "INR" : (meta.currency || "USD");
+        const currency = isIndian || growwQuote || meta.currency === "INR" ? "INR" : (meta.currency || "USD");
 
         res.json({
-          ticker,
+          ticker: cleanTicker,
+          symbol: yahooTicker,
           companyName,
           currency,
           price: Number(currentPrice.toFixed(2)),
@@ -223,7 +360,7 @@ marketRouter.get("/market/quote/:ticker", async (req: Request, res: Response): P
     }
 
     // Resilient fallback generator if ticker is not available or rate limited
-    const basePrice = growwQuote?.price || (isIndian ? 2450.0 : (150 + (ticker.charCodeAt(0) * 7) % 180));
+    const basePrice = growwQuote?.price || (isIndian ? 2450.0 : (150 + (cleanTicker.charCodeAt(0) * 7) % 180));
     const chartData: { time: string; value: number }[] = [];
     const days = timeframe === "1D" ? 1 : timeframe === "1W" ? 7 : timeframe === "1M" ? 30 : timeframe === "3M" ? 90 : 365;
     let p = basePrice;
@@ -250,8 +387,9 @@ marketRouter.get("/market/quote/:ticker", async (req: Request, res: Response): P
     const changePct = Number(((change / prevClose) * 100).toFixed(2));
 
     res.json({
-      ticker,
-      companyName: growwQuote?.companyName || (cleanTicker in INDEX_YAHOO_MAP ? cleanTicker : `${ticker} Asset`),
+      ticker: cleanTicker,
+      symbol: yahooTicker,
+      companyName: growwQuote?.companyName || resolved.companyName || `${cleanTicker} Asset`,
       currency: isIndian || growwQuote ? "INR" : "USD",
       price: currentPrice,
       previousClose: prevClose,

@@ -13,8 +13,10 @@ import { validateBody } from "../middleware/validate";
 import { AgentRuntimeClient } from "../services/agentRuntimeClient";
 import { decryptCredential } from "../services/encryption";
 import { logAuditEvent } from "../services/auditLogger";
+import { PredictionService } from "../prediction/prediction.service";
 
 export const analysisRouter = Router();
+
 
 // Launch a multi-agent debate analysis run
 analysisRouter.post(
@@ -58,19 +60,70 @@ analysisRouter.post(
         payload: { ticker, horizon, debateRounds, minConfidence },
       });
 
-      // Trigger multi-agent pipeline asynchronously
+      // Trigger multi-agent pipeline asynchronously via PredictionService
       (async () => {
         try {
-          const result = await AgentRuntimeClient.triggerAnalysisRun({
-            runId: run._id.toString(),
-            userId: req.user!.id,
+          const predictionResult = await PredictionService.runPipeline(
             ticker,
-            horizon,
-            minConfidence,
-            debateRounds,
-            requireUnanimousConvergence,
-            userApiKeys,
-          });
+            (horizon as any) || "5d",
+            req.user!.id,
+            userApiKeys
+          );
+
+          // Populate AgentMessage collection for full backward compatibility with frontend debate views
+          const messagesToCreate = [
+            {
+              runId: run._id,
+              agentRole: "technical_analyst" as const,
+              llmProvider: "groq" as const,
+              sequenceIndex: 1,
+              content: predictionResult.technical.agent.reasoning_summary,
+              structuredOutput: predictionResult.technical.agent,
+            },
+            {
+              runId: run._id,
+              agentRole: "fundamentals_analyst" as const,
+              llmProvider: "mistral" as const,
+              sequenceIndex: 2,
+              content: predictionResult.fundamental.agent.reasoning_summary,
+              structuredOutput: predictionResult.fundamental.agent,
+            },
+            {
+              runId: run._id,
+              agentRole: "sentiment_analyst" as const,
+              llmProvider: "gemini" as const,
+              sequenceIndex: 3,
+              content: predictionResult.sentiment.agent.reasoning_summary,
+              structuredOutput: predictionResult.sentiment.agent,
+            },
+            {
+              runId: run._id,
+              agentRole: "risk_manager" as const,
+              llmProvider: "nvidia" as const,
+              sequenceIndex: 4,
+              content: predictionResult.risk.agent.reasoning_summary,
+              structuredOutput: predictionResult.risk.agent,
+            },
+            {
+              runId: run._id,
+              agentRole: "portfolio_manager" as const,
+              llmProvider: "openrouter" as const,
+              sequenceIndex: 5,
+              content: predictionResult.verification.reasoning_summary,
+              structuredOutput: {
+                verification: predictionResult.verification,
+                fusion: predictionResult.fusion,
+                horizons: predictionResult.horizons,
+              },
+            },
+          ];
+
+          for (const msg of messagesToCreate) {
+            try {
+              await AgentMessage.create(msg);
+            } catch (e) {}
+          }
+
 
           // Check if strategy backtest is eligible for paper trading
           const latestBacktest = await Backtest.findOne({
@@ -79,31 +132,33 @@ analysisRouter.post(
             status: "completed",
           }).sort({ completedAt: -1 });
 
-          let finalAction = result.finalAction;
+          let finalAction = predictionResult.prediction.action;
           // Hard rule: If backtest eligibility is false, force 'hold'
           if (latestBacktest && !latestBacktest.isEligibleForPaperTrading && finalAction !== "hold") {
             finalAction = "hold";
-            result.rationale = `[OVERFITTING GATE ENGAGED]: Strategy backtest for ${ticker} has not passed deflated Sharpe / PBO robustness checks. Recommendation strictly forced to HOLD. Original draft was ${result.finalAction}.`;
+            predictionResult.prediction.reasoning = `[OVERFITTING GATE ENGAGED]: Strategy backtest for ${ticker} has not passed deflated Sharpe / PBO robustness checks. Recommendation strictly forced to HOLD. Original draft was ${predictionResult.prediction.action}.`;
           }
+
+          const confidenceVal = Number((predictionResult.confidence.overall_confidence / 100).toFixed(2));
 
           await AgentRun.findByIdAndUpdate(run._id, {
             status: "completed",
             finalAction,
-            confidence: result.confidence,
-            rationale: result.rationale,
+            confidence: confidenceVal,
+            rationale: predictionResult.prediction.reasoning,
             completedAt: new Date(),
           });
 
           // If action is buy or sell and confidence meets user's threshold, create trade proposal
           if (
             (finalAction === "buy" || finalAction === "sell") &&
-            result.confidence >= minConfidence
+            confidenceVal >= minConfidence
           ) {
             const riskProfile = await RiskProfile.findOne({ userId: req.user!.id });
             const capital = riskProfile?.allocatableCapital || 10000;
             const maxPosPct = riskProfile?.maxPositionPct || 10;
-            const sizePct = Math.min(result.suggestedSizePct || 5, maxPosPct);
-            const estPrice = 150.0; // Price proxy from factor/forecast
+            const sizePct = Math.min(5, maxPosPct);
+            const estPrice = predictionResult.market_snapshot.price || 150.0;
             const qty = Math.max(1, Math.floor((capital * (sizePct / 100)) / estPrice));
 
             await TradeProposal.create({
@@ -113,7 +168,7 @@ analysisRouter.post(
               action: finalAction,
               suggestedQuantity: qty,
               suggestedSizePct: sizePct,
-              confidence: result.confidence,
+              confidence: confidenceVal,
               status: "pending",
             });
           }
@@ -125,16 +180,19 @@ analysisRouter.post(
             entityId: run._id.toString(),
             payload: {
               finalAction,
-              confidence: result.confidence,
+              confidence: confidenceVal,
+              predictionId: predictionResult.predictionId,
             },
           });
         } catch (err: any) {
+          console.error(`[AnalysisRoute] Error executing prediction pipeline:`, err);
           await AgentRun.findByIdAndUpdate(run._id, {
             status: "failed",
             completedAt: new Date(),
           });
         }
       })();
+
 
       res.status(202).json({
         message: "Analysis run started. Track progress live via WebSocket or polling.",

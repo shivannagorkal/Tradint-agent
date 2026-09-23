@@ -420,6 +420,91 @@ AuditLogSchema.pre("deleteMany", function (this: any, next: any) {
   next(new Error("Audit log is immutable: updates and deletions are strictly prohibited."));
 });
 
+// ==========================================
+// 12. Stored Predictions (Market Intelligence Engine)
+// ==========================================
+export interface IPrediction extends Document {
+  userId?: Types.ObjectId;
+  symbol: string;
+  exchange: string;
+  timestamp: Date;
+  timestamps: {
+    market_data_at: string;
+    news_data_at: string;
+    analysis_generated_at: string;
+    historical_data_until: string;
+  };
+  market_snapshot: Record<string, any>;
+  technical: Record<string, any>;
+  fundamental: Record<string, any>;
+  sentiment: Record<string, any>;
+  risk: Record<string, any>;
+  historical: Record<string, any>;
+  verification: Record<string, any>;
+  prediction: {
+    horizon: string;
+    up: number;
+    sideways: number;
+    down: number;
+    confidence: number;
+    raw_score: number;
+    direction: "bullish" | "bearish" | "neutral";
+  };
+  horizons: Record<string, {
+    up: number;
+    sideways: number;
+    down: number;
+    confidence: number;
+    expectedMovePct?: number;
+  }>;
+  outcome?: {
+    actualPrice?: number;
+    evaluatedAt?: Date;
+    wasCorrect?: boolean;
+    returnPct?: number;
+  };
+}
+
+const PredictionSchema = new Schema<IPrediction>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    symbol: { type: String, required: true, uppercase: true, trim: true, index: true },
+    exchange: { type: String, default: "NSE" },
+    timestamp: { type: Date, default: Date.now, index: true },
+    timestamps: {
+      market_data_at: { type: String, required: true },
+      news_data_at: { type: String, required: true },
+      analysis_generated_at: { type: String, required: true },
+      historical_data_until: { type: String, required: true },
+    },
+    market_snapshot: { type: Schema.Types.Mixed, default: {} },
+    technical: { type: Schema.Types.Mixed, default: {} },
+    fundamental: { type: Schema.Types.Mixed, default: {} },
+    sentiment: { type: Schema.Types.Mixed, default: {} },
+    risk: { type: Schema.Types.Mixed, default: {} },
+    historical: { type: Schema.Types.Mixed, default: {} },
+    verification: { type: Schema.Types.Mixed, default: {} },
+    prediction: {
+      horizon: { type: String, default: "5d" },
+      up: { type: Number, required: true },
+      sideways: { type: Number, required: true },
+      down: { type: Number, required: true },
+      confidence: { type: Number, required: true },
+      raw_score: { type: Number, required: true },
+      direction: { type: String, enum: ["bullish", "bearish", "neutral"], default: "neutral" },
+    },
+    horizons: { type: Schema.Types.Mixed, default: {} },
+    outcome: {
+      actualPrice: { type: Number },
+      evaluatedAt: { type: Date },
+      wasCorrect: { type: Boolean },
+      returnPct: { type: Number },
+    },
+  },
+  { timestamps: true }
+);
+PredictionSchema.index({ symbol: 1, timestamp: -1 });
+
 // Compile and export models
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const RiskProfile = mongoose.model<IRiskProfile>("RiskProfile", RiskProfileSchema);
@@ -435,3 +520,5 @@ export const Order = mongoose.model<IOrder>("Order", OrderSchema);
 export const RiskEvent = mongoose.model<IRiskEvent>("RiskEvent", RiskEventSchema);
 export const KillSwitchState = mongoose.model<IKillSwitchState>("KillSwitchState", KillSwitchStateSchema);
 export const AuditLog = mongoose.model<IAuditLog>("AuditLog", AuditLogSchema);
+export const Prediction = mongoose.model<IPrediction>("Prediction", PredictionSchema);
+
