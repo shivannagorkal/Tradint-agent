@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 const healthCheckHandler = (req: Request, res: Response) => {
   res.json({
     status: "ok",
-    service: "confluence-api",
+    service: "tradevault-api",
     timestamp: new Date().toISOString(),
     database: "mongodb",
   });
@@ -80,7 +80,7 @@ if (process.env.NODE_ENV !== "test") {
   (async () => {
     await connectDB();
     httpServer.listen(env.PORT, () => {
-      console.log(`🚀 Confluence API Gateway running on port ${env.PORT} (${env.NODE_ENV})`);
+      console.log(`🚀 TradeVault API Gateway running on port ${env.PORT} (${env.NODE_ENV})`);
     });
   })();
 }

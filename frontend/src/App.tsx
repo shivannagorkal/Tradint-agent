@@ -10,6 +10,10 @@ import { ProposalsPage } from './pages/ProposalsPage';
 import { BacktestsPage } from './pages/BacktestsPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LandingPage } from './pages/LandingPage';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { RequireAuth, RedirectIfAuth } from './components/auth/RouteGuards';
 import { useAuthStore } from './store/authStore';
 import { useKillSwitchStore } from './store/killSwitchStore';
@@ -37,10 +41,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          {/* Public routes (redirect to dashboard if already logged in) */}
+          {/* Public Landing & Policy Pages */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
+          {/* Public auth routes (redirect to dashboard if already logged in) */}
           <Route element={<RedirectIfAuth />}>
             <Route path="/login" element={<AuthPage type="login" />} />
             <Route path="/register" element={<AuthPage type="register" />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
           {/* Protected routes */}
@@ -59,8 +69,7 @@ function App() {
           </Route>
 
           {/* Catch-all redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

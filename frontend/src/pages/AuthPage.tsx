@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Eye, EyeOff, TrendingUp, ShieldCheck, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import logoImg from '@/assets/logo.png';
 import { authService } from '@/services/authService';
 
 const FEATURES = [
@@ -64,11 +65,9 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
         <div className="absolute top-[-80px] right-[-80px] w-64 h-64 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute bottom-[-100px] left-[-60px] w-80 h-80 rounded-full bg-white/5 pointer-events-none" />
 
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center">
-            <Layers className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-white text-xl font-bold tracking-tight">Confluence</span>
+        <div className="flex items-center gap-2.5 relative z-10">
+          <img src={logoImg} alt="TradeVault Logo" className="h-9 w-auto object-contain rounded-lg" />
+          <span className="text-white text-xl font-bold tracking-tight">TradeVault</span>
         </div>
 
         <div className="space-y-8 relative z-10">
@@ -106,10 +105,8 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <Layers className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-foreground">Confluence</span>
+            <img src={logoImg} alt="TradeVault Logo" className="h-8 w-auto object-contain rounded-md" />
+            <span className="text-lg font-bold text-foreground">TradeVault</span>
           </div>
 
           <h2 className="text-2xl font-bold text-foreground mb-1">
@@ -155,7 +152,7 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-foreground">Password</label>
                 {type === 'login' && (
-                  <button type="button" className="text-xs text-indigo-600 hover:underline">Forgot password?</button>
+                  <Link to="/forgot-password" className="text-xs text-indigo-600 hover:underline">Forgot password?</Link>
                 )}
               </div>
               <div className="relative">
@@ -201,9 +198,9 @@ export function AuthPage({ type }: { type: 'login' | 'register' }) {
 
           <p className="mt-6 text-xs text-center text-muted-foreground">
             By continuing you agree to our{' '}
-            <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a>{' '}
+            <Link to="/terms" className="text-indigo-600 hover:underline">Terms of Service</Link>{' '}
             and{' '}
-            <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>.
+            <Link to="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</Link>.
           </p>
         </div>
       </div>

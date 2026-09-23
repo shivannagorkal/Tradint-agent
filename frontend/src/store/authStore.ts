@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'confluence-auth',
+      name: 'tradevault-auth',
       partialize: (state) => ({ isAuthenticated: state.isAuthenticated, user: state.user }),
     }
   )

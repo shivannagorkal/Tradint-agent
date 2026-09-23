@@ -15,7 +15,7 @@ from app.execution.sizing import RLSizingEngine
 from app.market.groww_client import groww_client
 
 app = FastAPI(
-    title="Confluence Agent Runtime",
+    title="TradeVault Agent Runtime",
     version="1.0.0",
     description="Python microservice for Multi-Agent Debate, Quant Factor Mining, Probabilistic Forecasting & Backtest Validation",
 )
@@ -28,7 +28,7 @@ def verify_internal_secret(x_internal_secret: str = Header(None)):
 async def health():
     return {
         "status": "ok",
-        "service": "confluence-agent-runtime",
+        "service": "tradevault-agent-runtime",
         "models": {
             "groq_reasoning": settings.GROQ_REASONING_MODEL,
             "gemini": settings.GEMINI_MODEL,

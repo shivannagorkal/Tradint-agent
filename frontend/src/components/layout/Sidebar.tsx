@@ -5,6 +5,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuthStore } from '@/store/authStore';
+import logoImg from '@/assets/logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -43,10 +44,8 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
-              <Layers className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-foreground tracking-tight">Confluence</span>
+            <img src={logoImg} alt="TradeVault Logo" className="h-8 w-auto object-contain rounded-md" />
+            <span className="text-lg font-bold text-foreground tracking-tight">TradeVault</span>
           </div>
           <button
             className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-slate-100"
