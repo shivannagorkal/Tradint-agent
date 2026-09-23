@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, setApiToken } from "./api";
 
 export interface UserProfile {
   id: string;
@@ -20,15 +20,20 @@ export interface MeResponse {
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    return api.post<AuthResponse>("/auth/login", { email, password });
+    const res = await api.post<AuthResponse>("/auth/login", { email, password });
+    if (res.token) setApiToken(res.token);
+    return res;
   },
 
   register: async (displayName: string, email: string, password: string): Promise<AuthResponse> => {
-    return api.post<AuthResponse>("/auth/register", { displayName, email, password });
+    const res = await api.post<AuthResponse>("/auth/register", { displayName, email, password });
+    if (res.token) setApiToken(res.token);
+    return res;
   },
 
   logout: async (): Promise<void> => {
     await api.post("/auth/logout");
+    setApiToken(null);
   },
 
   getMe: async (): Promise<MeResponse> => {

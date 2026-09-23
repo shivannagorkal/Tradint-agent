@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService, type UserProfile } from '../services/authService';
+import { setApiToken } from '../services/api';
 
 export interface UserState {
   id: string;
@@ -81,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Even if server request fails, clear local state
         }
+        setApiToken(null);
         set({ isAuthenticated: false, isLoading: false, user: null, riskProfile: null });
       },
     }),

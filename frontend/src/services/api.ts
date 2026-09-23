@@ -43,6 +43,22 @@ export class ApiError extends Error {
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 const baseAlreadyHasApi = API_BASE_URL.endsWith("/api");
 
+// Token management for cross-origin deployments where httpOnly cookies don't work
+let authToken: string | null = null;
+try { authToken = localStorage.getItem('tradevault_token'); } catch {}
+
+export function setApiToken(token: string | null) {
+  authToken = token;
+  try {
+    if (token) localStorage.setItem('tradevault_token', token);
+    else localStorage.removeItem('tradevault_token');
+  } catch {}
+}
+
+export function getApiToken(): string | null {
+  return authToken;
+}
+
 async function request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   // Only prepend /api if the base URL doesn't already include it
@@ -55,6 +71,11 @@ async function request<T = any>(endpoint: string, options: RequestInit = {}): Pr
     Accept: "application/json",
     ...(options.headers as Record<string, string>),
   };
+
+  // Attach JWT token as Authorization header for cross-origin requests
+  if (authToken && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
 
   if (options.body && !(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
