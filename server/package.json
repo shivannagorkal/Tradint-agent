@@ -1,0 +1,16 @@
+{
+  "name": "confluence-server-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:schemas": "npm run build --workspace=@confluence/shared-schemas",
+    "build:api": "npm run build --workspace=@confluence/api",
+    "build": "npm run build:schemas && npm run build:api",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@confluence/api"
+  }
+}
