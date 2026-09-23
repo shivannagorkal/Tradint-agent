@@ -1,0 +1,84 @@
+import http from "http";
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { env } from "./config/env";
+import { connectDB } from "./db/connection";
+import { initSocketServer } from "./websocket/socketServer";
+
+// Route modules
+import { authRouter } from "./routes/auth";
+import { onboardingRouter } from "./routes/onboarding";
+import { credentialsRouter } from "./routes/credentials";
+import { watchlistRouter } from "./routes/watchlist";
+import { factorsRouter } from "./routes/factors";
+import { forecastsRouter } from "./routes/forecasts";
+import { backtestsRouter } from "./routes/backtests";
+import { analysisRouter } from "./routes/analysis";
+import { proposalsRouter } from "./routes/proposals";
+import { ordersRouter } from "./routes/orders";
+import { killSwitchRouter } from "./routes/killSwitch";
+import { auditLogRouter } from "./routes/auditLog";
+import { adminRouter } from "./routes/admin";
+
+export const app = express();
+const httpServer = http.createServer(app);
+
+// Middlewares
+app.use(
+  cors({
+    origin: env.CLIENT_URL,
+    credentials: true,
+  })
+);
+app.use(cookieParser());
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoint
+app.get("/health", (req: Request, res: Response) => {
+  res.json({
+    status: "ok",
+    service: "tradex-api",
+    timestamp: new Date().toISOString(),
+    database: "mongodb",
+  });
+});
+
+// API Routes
+app.use("/api/auth", authRouter);
+app.use("/api", onboardingRouter);
+app.use("/api", credentialsRouter);
+app.use("/api", watchlistRouter);
+app.use("/api", factorsRouter);
+app.use("/api", forecastsRouter);
+app.use("/api", backtestsRouter);
+app.use("/api", analysisRouter);
+app.use("/api", proposalsRouter);
+app.use("/api", ordersRouter);
+app.use("/api", killSwitchRouter);
+app.use("/api", auditLogRouter);
+app.use("/api", adminRouter);
+
+// Global Error Handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error("[API Error Handler]", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+  });
+});
+
+// Initialize Socket.io
+initSocketServer(httpServer);
+
+// Start server when run directly
+if (process.env.NODE_ENV !== "test") {
+  (async () => {
+    await connectDB();
+    httpServer.listen(env.PORT, () => {
+      console.log(`🚀 TradeX API Gateway running on port ${env.PORT} (${env.NODE_ENV})`);
+    });
+  })();
+}
+
+export { httpServer };
