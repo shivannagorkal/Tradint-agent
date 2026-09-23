@@ -119,7 +119,7 @@ watchlistRouter.delete(
   requireAuth,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const id = req.params.id;
+      const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) || "";
       if (mongoose.connection.readyState === 1) {
         await WatchlistItem.findOneAndDelete({ _id: id, userId: req.user!.id });
       } else {

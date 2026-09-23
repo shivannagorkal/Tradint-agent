@@ -142,16 +142,17 @@ backtestsRouter.get("/backtests", requireAuth, async (req: Request, res: Respons
 // Get backtest details by ID
 backtestsRouter.get("/backtests/:id", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) || "";
     const isDb = mongoose.connection.readyState === 1;
     if (isDb) {
-      const backtest = await Backtest.findOne({ _id: req.params.id, userId: req.user!.id });
+      const backtest = await Backtest.findOne({ _id: id, userId: req.user!.id });
       if (!backtest) {
         res.status(404).json({ error: "Backtest not found." });
         return;
       }
       res.json(backtest);
     } else {
-      const backtest = inMemoryStore.getBacktestById(req.user!.id, req.params.id);
+      const backtest = inMemoryStore.getBacktestById(req.user!.id, id);
       if (!backtest) {
         res.status(404).json({ error: "Backtest not found." });
         return;
