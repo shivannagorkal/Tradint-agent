@@ -4,6 +4,9 @@
 
 ---
 
+## Live Demo : https://tradevaultone.vercel.app/
+## Video Demo : https://drive.google.com/file/d/1xMjiYcjk2AKlkUHB2whCd4UQ7_v4MdNp/view
+
 ## Table of Contents
 
 - [System Architecture](#system-architecture)
